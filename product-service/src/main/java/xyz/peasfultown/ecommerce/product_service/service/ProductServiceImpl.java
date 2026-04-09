@@ -1,10 +1,11 @@
 package xyz.peasfultown.ecommerce.product_service.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import xyz.peasfultown.ecommerce.product_api.model.Product;
-import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 import xyz.peasfultown.ecommerce.product_service.mapper.ProductMapper;
 import xyz.peasfultown.ecommerce.product_service.repository.ProductRepository;
 
@@ -25,7 +26,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public List<Product> queryProducts(String name,
+    public Page<Product> queryProducts(String name,
                                        String category,
                                        BigDecimal minPrice,
                                        BigDecimal maxPrice,
@@ -34,8 +35,21 @@ public class ProductServiceImpl implements ProductService {
                                        String sortDir,
                                        Integer page,
                                        Integer size) {
+        if (sortBy == null)
+            sortBy = "name";
+        if (sortDir == null)
+            sortDir = "asc";
 
-        List<ProductEntity> pe = repo.findAll(hasName(name).and(hasCategoryName(category)));
-        return mapper.entityListToModelList(pe);
+        Sort sort = sortDir.equalsIgnoreCase("asc")
+            ? Sort.by(sortBy).ascending()
+            : Sort.by(sortBy).descending();
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+
+        return repo.findAll(
+            hasName(name)
+            .and(hasCategoryName(category)),
+            pageable
+            ).map(mapper::entityToModel);
     }
 }

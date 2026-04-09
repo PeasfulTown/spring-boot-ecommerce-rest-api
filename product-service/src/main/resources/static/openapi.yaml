@@ -84,9 +84,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Product'
+                $ref: '#/components/schemas/PagedProductResponse'
         '401':
           $ref: '#/components/responses/ErrorResponse'
 
@@ -304,6 +302,37 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
 
   schemas:
+    PagedResponsePage:
+      type: object
+      properties:
+        size:
+          type: integer
+        number:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+
+    PagedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: {}
+        page:
+          $ref: '#/components/schemas/PagedResponsePage'
+
+    PagedProductResponse:
+      allOf:
+        - $ref: '#/components/schemas/PagedResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
 
     ErrorResponse:
       type: object
