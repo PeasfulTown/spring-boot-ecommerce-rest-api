@@ -24,15 +24,47 @@ paths:
       summary: Lists products with optional filters
       operationId: queryProducts
       parameters:
-        - name: category
-          in: query
-          example: electronics
-          schema:
-            type: string
         - name: name
           in: query
           schema:
             type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: minPrice
+          in: query
+          schema:
+            type: BigDecimal
+        - name: maxPrice
+          in: query
+          schema:
+            type: BigDecimal
+        - name: stockStatus
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - IN_STOCK
+                - LOW_STOCK
+                - OUT_OF_STOCK
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum:
+              - name
+              - category
+              - price
+        - name: sortDir
+          in: query
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
         - name: page
           in: query
           schema:

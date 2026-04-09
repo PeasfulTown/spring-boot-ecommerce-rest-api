@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
+import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,4 +16,9 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, UUID> 
             select c from CategoryEntity c where c.name = :name
             """)
     Optional<CategoryEntity> findCategoryByName(@NotNull @Param("name") String name);
+
+    @Query(value = """
+            select c.products from CategoryEntity c where c.id = :id
+            """)
+    List<ProductEntity> findProductsByCategoryId(UUID id);
 }

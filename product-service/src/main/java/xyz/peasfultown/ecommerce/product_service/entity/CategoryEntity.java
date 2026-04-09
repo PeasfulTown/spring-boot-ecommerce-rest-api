@@ -6,10 +6,12 @@ import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Table(name = "category")
+@Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
@@ -26,4 +28,7 @@ public class CategoryEntity {
 
     @Column(name = "description", length = 100)
     private String description;
+
+    @ManyToMany(mappedBy = "categories")
+    private List<ProductEntity> products;
 }

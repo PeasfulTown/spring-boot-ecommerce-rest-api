@@ -4,6 +4,7 @@ import org.mapstruct.Mapper;
 import xyz.peasfultown.ecommerce.product_api.model.Category;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
 
+import java.util.List;
 import java.util.UUID;
 
 @Mapper(componentModel = "spring")
@@ -21,5 +22,13 @@ public abstract class CategoryMapper {
                 .name(model.getName())
                 .description(model.getDescription())
                 .build();
+    }
+
+    public List<CategoryEntity> modelListToEntityList(List<Category> cl) {
+        return cl.stream().map(this::modelToEntity).toList();
+    }
+
+    public List<Category> entityListToModelList(List<CategoryEntity> cl) {
+        return cl.stream().map(this::entityToModel).toList();
     }
 }
