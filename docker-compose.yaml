@@ -17,6 +17,7 @@ services:
 
 networks:
   ecommerce:
+    name: ecommerce
     driver: bridge
 
 volumes:

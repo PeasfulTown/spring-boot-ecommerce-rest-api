@@ -50,11 +50,9 @@ public class ProductEntity {
     @Enumerated(EnumType.STRING)
     private StockStatus stockStatus = StockStatus.OUT_OF_STOCK;
 
-    @ManyToMany
-    @JoinTable(name = "product_category",
-                joinColumns = @JoinColumn(name = "product_id"),
-                inverseJoinColumns = @JoinColumn(name = "category_id"))
-    private List<CategoryEntity> categories;
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = false)
+    private CategoryEntity category;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
@@ -63,10 +61,22 @@ public class ProductEntity {
     private Instant updatedAt = Instant.now();
 
     public enum ActiveStatus {
-        ACTIVE, INACTIVE
+        ACTIVE, INACTIVE;
+
+        public static ActiveStatus fromValue(String value) {
+            for (ActiveStatus s : ActiveStatus.values())
+                if (s.toString().equalsIgnoreCase(value)) return s;
+            throw new IllegalArgumentException(String.format("Unexpected ActiveStatus value: %s", value));
+        }
     }
 
     public enum StockStatus {
-        OUT_OF_STOCK, IN_STOCK, LOW_STOCK
+        OUT_OF_STOCK, IN_STOCK, LOW_STOCK;
+
+        public static StockStatus fromValue(String value) {
+            for (StockStatus s : StockStatus.values())
+                if (s.name().equalsIgnoreCase(value)) return s;
+            throw new IllegalArgumentException(String.format("Unexpected StockStatus value: %s", value));
+        }
     }
 }

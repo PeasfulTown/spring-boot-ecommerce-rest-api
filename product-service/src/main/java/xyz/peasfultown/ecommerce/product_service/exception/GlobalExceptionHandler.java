@@ -33,7 +33,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private HttpStatus determineHttpStatus(Throwable exception) {
         HttpStatus code;
-        if (exception instanceof CategoryAlreadyExistsException)
+        if (exception instanceof CategoryAlreadyExistsException
+            || exception instanceof IllegalArgumentException)
             code = HttpStatus.BAD_REQUEST;
         else if (exception instanceof CategoryNotFoundException)
             code = HttpStatus.NOT_FOUND;

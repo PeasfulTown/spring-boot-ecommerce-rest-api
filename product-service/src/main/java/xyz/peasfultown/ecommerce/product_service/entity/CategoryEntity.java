@@ -29,6 +29,6 @@ public class CategoryEntity {
     @Column(name = "description", length = 100)
     private String description;
 
-    @ManyToMany(mappedBy = "categories")
+    @OneToMany(mappedBy = "category")
     private List<ProductEntity> products;
 }

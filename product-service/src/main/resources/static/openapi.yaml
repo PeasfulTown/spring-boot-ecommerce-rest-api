@@ -45,11 +45,7 @@ paths:
           schema:
             type: array
             items:
-              type: string
-              enum:
-                - IN_STOCK
-                - LOW_STOCK
-                - OUT_OF_STOCK
+              $ref: '#/components/schemas/ProductStockStatus'
         - name: sortBy
           in: query
           schema:
@@ -395,10 +391,8 @@ components:
           $ref: '#/components/schemas/ProductActiveStatus'
         stockStatus:
           $ref: '#/components/schemas/ProductStockStatus'
-        categories:
-          type: array
-          items:
-            $ref: '#/components/schemas/Category'
+        category:
+          $ref: '#/components/schemas/Category'
         createdAt:
           type: string
           format: date-time
@@ -410,7 +404,6 @@ components:
 
     PatchProductReq:
       type: object
-      required: [ updatedAt ]
       properties:
         name:
           type: string
@@ -426,37 +419,32 @@ components:
           $ref: '#/components/schemas/ProductStockStatus'
         activeStatus:
           $ref: '#/components/schemas/ProductActiveStatus'
-        categories:
-          type: array
-          items:
-            type: string
-        updatedAt:
+        category:
           type: string
-          format: date-time
       xml:
         name: PatchProductReq
 
     NewProductReq:
       type: object
-      required: [ name, imageUrls, price, categories ]
+      required: [ name, imageUrls, price, category ]
       description: Request object for adding new product
       properties:
         name:
           type: string
+          minLength: 5
         description:
           type: string
         imageUrls:
           type: array
+          minItems: 1
           items:
             type: string
         price:
           type: BigDecimal
           example: 949.99
-        categories:
-          description: Category names
-          type: array
-          items:
-            type: string
+        category:
+          type: string
+          minItems: 1
       xml:
         name: NewProductReq
 
@@ -467,6 +455,7 @@ components:
       properties:
         name:
           type: string
+          minLength: 5
         description:
           type: string
 
