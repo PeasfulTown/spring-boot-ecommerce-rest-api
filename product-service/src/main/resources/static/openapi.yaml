@@ -287,7 +287,22 @@ paths:
           $ref: '#/components/responses/ErrorResponse'
 
 components:
-
+#  parameters:
+#    UserIdHeader:
+#      name: X-User-Id
+#      in: header
+#      required: true
+#      schema:
+#        type: string
+#    UserRoleHeader:
+#      name: X-User-Role
+#      in: header
+#      required: true
+#      schema:
+#        type: string
+#        enum:
+#          - ADMIN
+#          - CUSTOMER
   responses:
 
     ErrorResponse:
@@ -444,7 +459,7 @@ components:
           example: 949.99
         category:
           type: string
-          minItems: 1
+          minLength: 5
       xml:
         name: NewProductReq
 

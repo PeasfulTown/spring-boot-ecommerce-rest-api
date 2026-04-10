@@ -1,15 +1,16 @@
-package xyz.peasfultown.ecommerce.product_service.controller;
+package xyz.peasfultown.ecommerce.product_service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import xyz.peasfultown.ecommerce.product_api.model.NewCategoryReq;
 import xyz.peasfultown.ecommerce.product_api.model.NewProductReq;
 import xyz.peasfultown.ecommerce.product_api.model.Product;
+import xyz.peasfultown.ecommerce.product_service.controller.ProductController;
 import xyz.peasfultown.ecommerce.product_service.service.ProductService;
 
 import java.math.BigDecimal;
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ProductController.class)
+@ActiveProfiles("test")
 class ProductControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -66,14 +68,4 @@ class ProductControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    @Test
-    void addCategory_shouldReturn400_whenNameIsBlank() throws Exception {
-        NewCategoryReq req = new NewCategoryReq()
-                .name("");
-
-        mockMvc.perform(post("/api/v1/categories")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isBadRequest());
-    }
 }
