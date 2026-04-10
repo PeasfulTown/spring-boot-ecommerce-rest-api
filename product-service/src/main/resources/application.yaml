@@ -1,0 +1,13 @@
+spring:
+  profiles.active: ${ACTIVE_PROFILE}
+  application:
+    name: ProductService
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
