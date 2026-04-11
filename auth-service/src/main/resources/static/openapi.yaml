@@ -1,0 +1,208 @@
+openapi: 3.0.1
+info:
+  title: E-Commerce Authentication Service
+  description: |
+    Handles the authentication management part of the e-commerce 
+    microservices platform
+  contact:
+    email: emrin4@gmail.com
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  version: 0.0.1
+
+tags:
+  - name: auth
+    description: Account management (login, register, logout, refresh token)
+
+paths:
+
+  /api/v1/auth/register:
+    post:
+      tags: [ auth ]
+      summary: Create a new account
+      operationId: register
+      requestBody:
+        description: New account request body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewAccountReq'
+      responses:
+        '201':
+          description: Account creation successful return access token and 
+            refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Authentication'
+        '400':
+          description: Account creation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/token:
+
+    post:
+      tags: [ auth ]
+      summary: Get access token
+      description: Generates JWT and refresh token
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginReq'
+      responses:
+        '200':
+          description: Returns the access token and refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Authentication'
+        '400':
+          description: Incorrect credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/token/renew:
+
+    post:
+      tags: [ auth ]
+      summary: Gives new access token using provided refresh token
+      operationId: renewAccessToken
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshToken'
+      responses:
+        '200':
+          description: Successfully refresh access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Authentication'
+        '400':
+          description: Invalid refresh token provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  #  parameters:
+  #    UserIdHeader:
+  #      name: X-User-Id
+  #      in: header
+  #      required: true
+  #      schema:
+  #        type: string
+  #    UserRoleHeader:
+  #      name: X-User-Role
+  #      in: header
+  #      required: true
+  #      schema:
+  #        type: string
+  #        enum:
+  #          - ADMIN
+  #          - CUSTOMER
+
+  schemas:
+    PagedResponsePage:
+      type: object
+      properties:
+        size:
+          type: integer
+        number:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+
+    PagedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: {}
+        page:
+          $ref: '#/components/schemas/PagedResponsePage'
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [ status, message ]
+
+    NewAccountReq:
+      type: object
+      required: [ email, password ]
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 10
+        password:
+          type: string
+          format: password
+          minLength: 5
+
+    LoginReq:
+      type: object
+      required: [ email, password ]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    Authentication:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+
+    RefreshToken:
+      type: object
+      required: [ token ]
+      properties:
+        token:
+          type: string
+
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+          enum:
+            - ADMIN
+            - USER
