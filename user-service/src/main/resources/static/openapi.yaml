@@ -1,0 +1,446 @@
+openapi: 3.0.1
+info:
+  title: E-Commerce User Service
+  description: |
+    Handles the user account management part of the e-commerce 
+    microservices platform
+  contact:
+    email: emrin4@gmail.com
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  version: 0.0.1
+
+tags:
+  - name: user
+    description: Account management (login, register, logout, refresh token)
+  - name: address
+    description: User address management
+
+paths:
+  /api/v1/users:
+    post:
+      tags: [ user ]
+      summary: Create user record
+      operationId: createUser
+      requestBody:
+        description: New user request body object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUserReq'
+      responses:
+        '201':
+          description: User creation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    get:
+      tags: [ user ]
+      summary: Get all user record (admin role)
+      operationId: getUsers
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: User does not have suitable role
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/{id}:
+
+    delete:
+      tags: [ user ]
+      summary: Delete user record (admin role)
+      operationId: deleteUser
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Successful user deletion
+          content: {}
+        '404':
+          description: User not found by ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/users/me:
+    get:
+      tags: [ user ]
+      summary: Get user information
+      operationId: getMyUser
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+                schema:
+                  $ref: '#/components/schemas/User'
+
+    patch:
+      tags: [ user ]
+      summary: Update user record
+      operationId: updateMyUser
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      requestBody:
+        description: User update form object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserReq'
+      responses:
+        '200':
+          description: Successful user record update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    delete:
+      tags: [ user ]
+      summary: Delete user record
+      operationId: deleteMyUser
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '204':
+          description: Successful user deletion
+          content: {}
+
+  /api/v1/users/me/addresses:
+
+    post:
+      tags: [ address ]
+      summary: Create a user address
+      operationId: createMyAddress
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      requestBody:
+        description: New address creation body
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewAddressReq'
+      responses:
+        '201':
+          description: Successfully created user address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+
+    get:
+      tags: [ address ]
+      summary: Get all of a user's address
+      operationId: getAllMyAddresses
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Address'
+
+  /api/v1/users/me/addresses/{id}:
+
+    get:
+      tags: [ address ]
+      summary: Get a user's address by ID
+      operationId: getMyAddressById
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '404':
+          description: Address not found by ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+
+    delete:
+      tags: [ address ]
+      summary: Delete a user's address by ID
+      operationId: deleteMyAddressById
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Successful address delete
+          content: {}
+        '404':
+          description: Address not found by ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags: [ address ]
+      summary: Update a user's address by ID
+      operationId: updateMyAddressById
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: Update address request body object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAddressReq'
+      responses:
+        '200':
+          description: Successful address update
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '404':
+          description: Address not found by ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+
+  parameters:
+    UserIdHeader:
+      name: X-User-Id
+      in: header
+      required: true
+      schema:
+        type: string
+    UserRoleHeader:
+      name: X-User-Role
+      in: header
+      required: true
+      schema:
+        type: string
+        enum:
+          - ADMIN
+          - CUSTOMER
+
+  schemas:
+
+    PagedResponsePage:
+      type: object
+      properties:
+        size:
+          type: integer
+        number:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+
+    PagedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: {}
+        page:
+          $ref: '#/components/schemas/PagedResponsePage'
+
+    PagedUserResponse:
+      allOf:
+        - $ref: '#/components/schemas/PagedResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [ status, message ]
+
+    NewUserReq:
+      type: object
+      required: [ id, email, firstName, lastName, phone ]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+
+    UpdateUserReq:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    NewAddressReq:
+      type: object
+      description: Request body for adding a new address
+      required: [ number, street, city, state, country, postalCode ]
+      properties:
+        number:
+          type: string
+          example: 42
+          description: Street number
+        street:
+          type: string
+          example: Maple Avenue
+          description: Street name
+        city:
+          type: string
+          example: Austin
+        state:
+          type: string
+          example: Texas
+        country:
+          type: string
+          example: United States
+        postalCode:
+          type: string
+          example: 78701
+
+
+    UpdateAddressReq:
+      type: object
+      description: Request body for updating address
+      properties:
+        number:
+          type: string
+          description: Street number
+        street:
+          type: string
+          example: Crescent Boulevard
+          description: Street name
+        city:
+          type: string
+          example: Portland
+        state:
+          type: string
+          example: Oregon
+        country:
+          type: string
+          example: United States
+        postalCode:
+          type: string
+          example: 97201
+
+    Address:
+      type: object
+      description: The user's shipping address
+      properties:
+        id:
+          type: string
+        userId:
+          description: Identifier of the user this address belongs to
+          type: string
+        number:
+          type: string
+          description: Street number
+        street:
+          type: string
+          description: Street name
+        city:
+          type: string
+        state:
+          type: string
+        country:
+          type: string
+        postalCode:
+          type: string
+        primary:
+          type: boolean
