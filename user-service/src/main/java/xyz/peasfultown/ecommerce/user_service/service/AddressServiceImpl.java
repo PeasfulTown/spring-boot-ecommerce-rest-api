@@ -53,8 +53,8 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Override
-    public Address getUserAddressById(String userId, UUID addressId) {
-        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), addressId)
+    public Address getUserAddressById(String userId, String addressId) {
+        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), UUID.fromString(addressId))
                 .orElseThrow(() -> new AddressNotFoundException(String.format(
                         "Address not found by ID: %s", addressId
                 )));
@@ -63,8 +63,8 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Override
-    public Address updateAddressById(String userId, UUID addressId, UpdateAddressReq updateAddressReq) {
-        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), addressId)
+    public Address updateAddressById(String userId, String addressId, UpdateAddressReq updateAddressReq) {
+        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), UUID.fromString(addressId))
                 .orElseThrow(() -> new AddressNotFoundException(String.format(
                         "Address not found by ID: %s", addressId
                 )));
@@ -88,8 +88,8 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Override
-    public void deleteAddressById(String userId, UUID addressId) {
-        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), addressId)
+    public void deleteAddressById(String userId, String addressId) {
+        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), UUID.fromString(addressId))
                 .orElseThrow(() -> new AddressNotFoundException(String.format(
                         "Address not found by ID: %s", addressId
                 )));

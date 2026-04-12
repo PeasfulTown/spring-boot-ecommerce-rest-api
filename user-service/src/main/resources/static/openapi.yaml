@@ -181,7 +181,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
       responses:
         '200':
           description: Successful read
@@ -207,7 +206,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
       responses:
         '204':
           description: Successful address delete
@@ -230,7 +228,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
       requestBody:
         description: Update address request body object
         content:

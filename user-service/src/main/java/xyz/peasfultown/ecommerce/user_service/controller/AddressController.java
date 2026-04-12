@@ -10,7 +10,6 @@ import xyz.peasfultown.ecommerce.user_api.model.UpdateAddressReq;
 import xyz.peasfultown.ecommerce.user_service.service.AddressService;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.springframework.http.ResponseEntity.ok;
 import static org.springframework.http.ResponseEntity.status;
@@ -29,23 +28,23 @@ public class AddressController implements AddressApi {
     }
 
     @Override
-    public ResponseEntity<Address> getMyAddressById(String xUserId, UUID id) throws Exception {
-        return ok(service.getUserAddressById(xUserId, id));
+    public ResponseEntity<Address> getMyAddressById(String userId, String addressId) throws Exception {
+        return ok(service.getUserAddressById(userId, addressId));
     }
 
     @Override
-    public ResponseEntity<Address> updateMyAddressById(String xUserId, UUID id, UpdateAddressReq updateAddressReq) throws Exception {
-        return ok(service.updateAddressById(xUserId, id, updateAddressReq));
+    public ResponseEntity<Address> updateMyAddressById(String userIdHeader, String addressId, UpdateAddressReq updateAddressReq) throws Exception {
+        return ok(service.updateAddressById(userIdHeader, addressId, updateAddressReq));
     }
 
     @Override
-    public ResponseEntity<Void> deleteMyAddressById(String xUserId, UUID id) throws Exception {
-        service.deleteAddressById(xUserId, id);
+    public ResponseEntity<Void> deleteMyAddressById(String userId, String addressId) throws Exception {
+        service.deleteAddressById(userId, addressId);
         return status(HttpStatus.NO_CONTENT).build();
     }
 
     @Override
-    public ResponseEntity<List<Address>> getAllMyAddresses(String xUserId) throws Exception {
-        return ok(service.getAllUserAddresses(xUserId));
+    public ResponseEntity<List<Address>> getAllMyAddresses(String userId) throws Exception {
+        return ok(service.getAllUserAddresses(userId));
     }
 }
