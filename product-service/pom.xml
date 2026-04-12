@@ -30,7 +30,7 @@
 		<java.version>17</java.version>
 		<springdoc.version>2.6.0</springdoc.version>
 		<swagger-ui.version>5.17.14</swagger-ui.version>
-		<spring-cloud.version>2025.0.1</spring-cloud.version>
+		<spring-cloud.version>2025.0.2</spring-cloud.version>
 		<org.mapstruct.version>1.6.3</org.mapstruct.version>
 		<lombok.version>1.18.42</lombok.version>
 	</properties>
