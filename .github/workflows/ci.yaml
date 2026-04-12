@@ -2,14 +2,24 @@ name: Github action CI
 on:
   push:
     branches: [ main, dev ]
+
   pull_request:
     branches: [ main ]
 
 jobs:
   build-and-test:
-    name: Build and test
+    name: Build and test (${{ matrix.service }})
     runs-on:
       labels: [ self-hosted, spring ]
+
+    strategy:
+      matrix:
+        service: [ auth-service, product-service ]
+      fail-fast: false
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
 
     steps:
       - name: Checkout code
@@ -20,20 +30,18 @@ jobs:
         with:
           java-version: 17
           distribution: 'temurin'
+          cache: 'maven'
 
       - name: Grant execution permission to maven
-        working-directory: ${{github.workspace}}/product-service
         run: |
           chmod +x ./mvnw
 
       - name: Run tests
-        working-directory: ${{github.workspace}}/product-service
         run: |
           ./mvnw clean test
 
       - name: Package jar
         if: success()
-        working-directory: ${{github.workspace}}/product-service
         run: |
           ./mvnw package
 
