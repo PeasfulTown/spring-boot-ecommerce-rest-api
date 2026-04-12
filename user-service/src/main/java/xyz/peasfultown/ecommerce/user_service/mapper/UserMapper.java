@@ -7,11 +7,14 @@ import xyz.peasfultown.ecommerce.user_service.entity.UserEntity;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    abstract User entityToModel(UserEntity ue);
+    User toModel(UserEntity ue);
+
+    List<User> toModel(List<UserEntity> ue);
 
     default OffsetDateTime map(Instant instant) {
         if (instant == null) return null;

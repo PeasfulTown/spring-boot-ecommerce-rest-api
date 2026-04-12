@@ -19,6 +19,7 @@ tags:
 
 paths:
   /api/v1/users:
+
     post:
       tags: [ user ]
       summary: Create user record
@@ -83,6 +84,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/users/me:
+
     get:
       tags: [ user ]
       summary: Get user information
@@ -418,6 +420,8 @@ components:
         postalCode:
           type: string
           example: 97201
+        isPrimary:
+          type: boolean
 
     Address:
       type: object
@@ -442,5 +446,5 @@ components:
           type: string
         postalCode:
           type: string
-        primary:
+        isPrimary:
           type: boolean

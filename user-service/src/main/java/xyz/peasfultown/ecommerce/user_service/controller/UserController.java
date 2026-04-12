@@ -8,7 +8,10 @@ import xyz.peasfultown.ecommerce.user_api.UserApi;
 import xyz.peasfultown.ecommerce.user_api.model.NewUserReq;
 import xyz.peasfultown.ecommerce.user_api.model.UpdateUserReq;
 import xyz.peasfultown.ecommerce.user_api.model.User;
+import xyz.peasfultown.ecommerce.user_service.exception.ForbiddenException;
 import xyz.peasfultown.ecommerce.user_service.service.UserService;
+
+import java.util.List;
 
 import static org.springframework.http.ResponseEntity.ok;
 import static org.springframework.http.ResponseEntity.status;
@@ -22,6 +25,8 @@ public class UserController implements UserApi {
         this.service = service;
     }
 
+    // USER
+
     @Override
     public ResponseEntity<User> createUser(NewUserReq newUserReq) throws Exception {
         return status(HttpStatus.CREATED).body(service.createUser(newUserReq));
@@ -30,5 +35,35 @@ public class UserController implements UserApi {
     @Override
     public ResponseEntity<User> updateMyUser(String xUserId, UpdateUserReq updateUserReq) throws Exception {
         return ok(service.updateUser(xUserId, updateUserReq));
+    }
+
+    @Override
+    public ResponseEntity<User> getMyUser(String xUserId) throws Exception {
+        return ok(service.getUser(xUserId));
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteMyUser(String xUserId) throws Exception {
+        service.deleteUserById(xUserId);
+        return status(HttpStatus.NO_CONTENT).build();
+    }
+
+    // ADMIN
+
+    @Override
+    public ResponseEntity<Void> deleteUser(String xUserRole, String id) throws Exception {
+        if (!xUserRole.equalsIgnoreCase("ADMIN"))
+            throw new ForbiddenException();
+
+        service.deleteUserById(id);
+        return status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Override
+    public ResponseEntity<List<User>> getUsers(String xUserRole) throws Exception {
+        if (!xUserRole.equalsIgnoreCase("ADMIN"))
+            throw new ForbiddenException();
+
+        return ok(service.getAllUsers());
     }
 }

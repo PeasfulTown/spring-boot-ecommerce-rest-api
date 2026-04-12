@@ -11,6 +11,7 @@ import xyz.peasfultown.ecommerce.user_service.mapper.UserMapper;
 import xyz.peasfultown.ecommerce.user_service.repository.UserRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -44,7 +45,7 @@ public class UserServiceImpl implements UserService {
                 .build();
 
         ue = repo.save(ue);
-        return mapper.entityToModel(ue);
+        return mapper.toModel(ue);
     }
 
     @Override
@@ -63,6 +64,33 @@ public class UserServiceImpl implements UserService {
         if (Objects.nonNull(req.getPhone()))
             ue.setPhone(req.getPhone());
 
-        return mapper.entityToModel(repo.save(ue));
+        return mapper.toModel(repo.save(ue));
+    }
+
+    @Override
+    public User getUser(String xUserId) {
+        UserEntity ue = repo.findById(UUID.fromString(xUserId))
+                .orElseThrow(() -> new UserNotFoundException(String.format(
+                        "User not found by ID: %s", xUserId
+                )));
+
+        return mapper.toModel(ue);
+    }
+
+    @Override
+    public void deleteUserById(String xUserId) {
+        UserEntity ue = repo.findById(UUID.fromString(xUserId))
+                .orElseThrow(() -> new UserNotFoundException(String.format(
+                        "User not found by ID: %s", xUserId
+                )));
+
+        repo.delete(ue);
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        List<UserEntity> ues = repo.findAll();
+
+        return mapper.toModel(ues);
     }
 }

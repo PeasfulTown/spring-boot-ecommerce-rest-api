@@ -35,9 +35,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private HttpStatus determineHttpStatus(Throwable exception) {
         HttpStatus code;
 
-        if (exception instanceof UserAlreadyExistsException
-                || exception instanceof UserNotFoundException)
+        if (exception instanceof UserAlreadyExistsException)
             code = HttpStatus.BAD_REQUEST;
+        else if (exception instanceof UserNotFoundException)
+            code = HttpStatus.NOT_FOUND;
+        else if (exception instanceof ForbiddenException)
+            code = HttpStatus.FORBIDDEN;
         else
             code = HttpStatus.INTERNAL_SERVER_ERROR;
 
