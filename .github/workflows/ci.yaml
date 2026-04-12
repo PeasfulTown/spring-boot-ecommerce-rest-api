@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [ auth-service, product-service ]
+        service: [ auth-service, product-service, user-service ]
       fail-fast: false
 
     defaults:
