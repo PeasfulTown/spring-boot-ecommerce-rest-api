@@ -2,6 +2,11 @@ name: Github action CI
 on:
   push:
     branches: [ main, dev ]
+    paths:
+      - 'auth-service/**'
+      - 'product-service/**'
+      - 'user-service/**'
+      - 'cart-service/**'
 
   pull_request:
     branches: [ main ]
@@ -14,7 +19,7 @@ jobs:
 
     strategy:
       matrix:
-        service: [ auth-service, product-service, user-service ]
+        service: [ auth-service, product-service, user-service, cart-service ]
       fail-fast: false
 
     defaults:
