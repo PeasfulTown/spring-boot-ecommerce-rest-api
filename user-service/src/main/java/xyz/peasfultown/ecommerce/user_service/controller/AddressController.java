@@ -47,4 +47,10 @@ public class AddressController implements AddressApi {
     public ResponseEntity<List<Address>> getAllMyAddresses(String userId) throws Exception {
         return ok(service.getAllUserAddresses(userId));
     }
+
+    @Override
+    public ResponseEntity<Void> setMyAddressAsPrimaryById(String userId, String addressId) throws Exception {
+        service.setAddressAsPrimaryById(userId, addressId);
+        return status(HttpStatus.NO_CONTENT).build();
+    }
 }

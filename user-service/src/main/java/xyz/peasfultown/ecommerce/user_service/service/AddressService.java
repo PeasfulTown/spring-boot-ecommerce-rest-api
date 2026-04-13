@@ -17,4 +17,6 @@ public interface AddressService {
     void deleteAddressById(String userId, String addressId);
 
     List<Address> getAllUserAddresses(String userId);
+
+    void setAddressAsPrimaryById(String userId, String addressId);
 }

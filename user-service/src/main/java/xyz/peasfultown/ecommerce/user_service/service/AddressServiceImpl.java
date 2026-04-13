@@ -7,7 +7,6 @@ import xyz.peasfultown.ecommerce.user_api.model.UpdateAddressReq;
 import xyz.peasfultown.ecommerce.user_service.entity.AddressEntity;
 import xyz.peasfultown.ecommerce.user_service.entity.UserEntity;
 import xyz.peasfultown.ecommerce.user_service.exception.AddressNotFoundException;
-import xyz.peasfultown.ecommerce.user_service.exception.ForbiddenException;
 import xyz.peasfultown.ecommerce.user_service.exception.UserNotFoundException;
 import xyz.peasfultown.ecommerce.user_service.mapper.AddressMapper;
 import xyz.peasfultown.ecommerce.user_service.repository.AddressRepository;
@@ -102,5 +101,16 @@ public class AddressServiceImpl implements AddressService {
         List<AddressEntity> aes = repo.findAddressesByUserId(UUID.fromString(userId));
 
         return mapper.toModel(aes);
+    }
+
+    @Override
+    public void setAddressAsPrimaryById(String userId, String addressId) {
+        List<AddressEntity> aes = repo.findAddressesByUserId(UUID.fromString(userId));
+        aes.stream().forEach(a -> {
+            if (a.getId().toString().equals(addressId)) a.setPrimary(true);
+            else a.setPrimary(false);
+        });
+
+        repo.saveAll(aes);
     }
 }

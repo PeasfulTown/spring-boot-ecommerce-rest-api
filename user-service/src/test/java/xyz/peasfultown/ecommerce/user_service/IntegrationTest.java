@@ -30,6 +30,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -318,6 +319,24 @@ public class IntegrationTest {
                 .andExpect(jsonPath("$.postalCode").value(addrEntity1.getPostalCode()))
                 .andExpect(jsonPath("$.isPrimary").value(addrEntity1.isPrimary()))
                 .andExpect(jsonPath("$.userId").value(addrEntity1.getUser().getId().toString()));
+    }
+
+    @Test
+    void setMyAddressAsPrimaryById_shouldReturn200_whenValidInput() throws Exception {
+        userEntity = userRepo.save(userEntity);
+        addrEntity1.setPrimary(true);
+        addrEntity1.setUser(userEntity);
+
+        addrEntity2.setUser(userEntity);
+        addrEntity3.setUser(userEntity);
+        addrRepo.saveAll(List.of(addrEntity1, addrEntity2, addrEntity3));
+
+        mvc.perform(post("/api/v1/users/me/addresses/{id}/primary", addrEntity3.getId().toString())
+                .header("X-User-Id", userEntity.getId().toString()))
+                .andExpect(status().isNoContent());
+
+        assertFalse(addrRepo.findById(addrEntity1.getId()).get().isPrimary());
+        assertTrue(addrRepo.findById(addrEntity3.getId()).get().isPrimary());
     }
 
     @Test
