@@ -1,0 +1,2 @@
+services:
+  product-service-url: ${product-service.url}
