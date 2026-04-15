@@ -43,7 +43,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private HttpStatusCode determineHttpStatus(Throwable exception) {
         HttpStatusCode status;
-        if (exception instanceof ProductOutOfStockException)
+        if (exception instanceof ProductOutOfStockException
+            || exception instanceof IllegalArgumentException)
             status = HttpStatus.BAD_REQUEST;
         else if (exception instanceof ProductNotFoundException)
             status = HttpStatus.NOT_FOUND;

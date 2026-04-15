@@ -8,4 +8,6 @@ public interface CartService {
     Cart getCartByUserId(String userId);
 
     CartItem addItemToCart(String userId, AddItemReq req);
+
+    void clearUserCart(String userId);
 }

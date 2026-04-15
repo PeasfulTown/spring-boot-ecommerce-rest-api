@@ -1,5 +1,6 @@
 package xyz.peasfultown.ecommerce.cart_service.service;
 
+import com.google.common.collect.Lists;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import xyz.peasfultown.ecommerce.cart_api.model.*;
@@ -141,5 +142,16 @@ public class CartServiceImpl implements CartService {
         ce.getItems().forEach(i -> {
             ce.setTotalPrice(ce.getTotalPrice().add(i.getProductPrice().multiply(BigDecimal.valueOf(i.getQuantity()))));
         });
+    }
+
+    @Override
+    public void clearUserCart(String userId) {
+        // don't need to use get user cart private function which updates cart items
+        // since the cart is being cleared anyway
+        CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
+                .orElseThrow(() -> new IllegalArgumentException("Cart not found by user ID"));
+        ciRepo.deleteAll(ce.getItems());
+        ce.getItems().clear();
+        repo.save(ce);
     }
 }

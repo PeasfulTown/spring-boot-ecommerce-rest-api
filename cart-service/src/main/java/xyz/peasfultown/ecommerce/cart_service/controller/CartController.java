@@ -1,5 +1,6 @@
 package xyz.peasfultown.ecommerce.cart_service.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import xyz.peasfultown.ecommerce.cart_api.CartApi;
@@ -9,6 +10,7 @@ import xyz.peasfultown.ecommerce.cart_api.model.CartItem;
 import xyz.peasfultown.ecommerce.cart_service.service.CartService;
 
 import static org.springframework.http.ResponseEntity.ok;
+import static org.springframework.http.ResponseEntity.status;
 
 @RestController
 public class CartController implements CartApi {
@@ -26,5 +28,11 @@ public class CartController implements CartApi {
     @Override
     public ResponseEntity<CartItem> addItemToCart(String userId, AddItemReq req) throws Exception {
         return ok(service.addItemToCart(userId, req));
+    }
+
+    @Override
+    public ResponseEntity<Void> clearMyCart(String userId) throws Exception {
+        service.clearUserCart(userId);
+        return status(HttpStatus.NO_CONTENT).build();
     }
 }

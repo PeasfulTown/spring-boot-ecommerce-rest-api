@@ -29,6 +29,7 @@ import xyz.peasfultown.ecommerce.cart_service.repository.CartRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -36,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -366,6 +368,61 @@ public class IntegrationTest {
                         .content(objMapper.writeValueAsString(req))
                         .header("X-User-Id", userId.toString()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void clearMyCart_deletesAllItemsFromCart() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        CartEntity cartEntity = new CartEntity();
+        cartEntity.setUserId(userId);
+        cartEntity = cartRepo.save(cartEntity);
+
+        CartItemEntity ci1 = CartItemEntity.builder()
+                .cart(cartEntity)
+                .productId(UUID.fromString(p1.getId()))
+                .productName(p1.getName())
+                .productPrice(p1.getPrice())
+                .quantity(1)
+                .subtotal(p1.getPrice())
+                .build();
+        CartItemEntity ci2 = CartItemEntity.builder()
+                .cart(cartEntity)
+                .productId(UUID.fromString(p2.getId()))
+                .productName(p2.getName())
+                .productPrice(p2.getPrice())
+                .quantity(2)
+                .subtotal(p2.getPrice().multiply(BigDecimal.valueOf(2)))
+                .build();
+        CartItemEntity ci3 = CartItemEntity.builder()
+                .cart(cartEntity)
+                .productId(UUID.fromString(p3.getId()))
+                .productName(p3.getName())
+                .productPrice(p3.getPrice())
+                .quantity(3)
+                .subtotal(p3.getPrice().multiply(BigDecimal.valueOf(3)))
+                .build();
+
+        cartEntity.getItems().addAll(List.of(ci1, ci2, ci3));
+
+        cartEntity = cartRepo.findCartByUserId(userId).get();
+        assertThat(cartEntity.getItems()).hasSize(3);
+
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p1.getId()))).isPresent();
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p2.getId()))).isPresent();
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p3.getId()))).isPresent();
+
+        mvc.perform(delete("/api/v1/cart")
+                        .contentType(MediaType.APPLICATION_JSON)
+                .header("X-User-Id", userId.toString()))
+                .andExpect(status().isNoContent());
+
+        cartEntity = cartRepo.findCartByUserId(userId).get();
+        assertThat(cartEntity.getItems()).hasSize(0);
+
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p1.getId()))).isNotPresent();
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p2.getId()))).isNotPresent();
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p3.getId()))).isNotPresent();
     }
 
 }
