@@ -48,6 +48,11 @@ public class ProductController implements ProductApi {
     }
 
     @Override
+    public ResponseEntity<List<Product>> getProducts(List<ProductId> productId) throws Exception {
+        return ok(service.getProducts(productId));
+    }
+
+    @Override
     public ResponseEntity<Product> addProduct(@Valid NewProductReq newProductReq) throws Exception {
         return status(HttpStatus.CREATED).body(service.createProduct(newProductReq));
     }

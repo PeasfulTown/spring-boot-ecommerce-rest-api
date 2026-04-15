@@ -1,5 +1,6 @@
 package xyz.peasfultown.ecommerce.product_service.service;
 
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -7,6 +8,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import xyz.peasfultown.ecommerce.product_api.model.NewProductReq;
 import xyz.peasfultown.ecommerce.product_api.model.Product;
+import xyz.peasfultown.ecommerce.product_api.model.ProductId;
 import xyz.peasfultown.ecommerce.product_api.model.ProductStockStatus;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
 import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
@@ -20,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import static javax.management.Query.in;
 import static xyz.peasfultown.ecommerce.product_service.repository.specification.ProductSpecification.*;
 
 @Service
@@ -63,6 +66,15 @@ public class ProductServiceImpl implements ProductService {
                         .and(hasStockStatus(stockStatusListOf(stockStatus))),
                 pageable
         ).map(mapper::entityToModel);
+    }
+
+    @Override
+    public List<Product> getProducts(List<@Valid ProductId> productIds) {
+        if (productIds == null)
+            return mapper.entityListToModelList(repo.findAll());
+
+        List<UUID> uuids = productIds.stream().map(p -> UUID.fromString(p.getId())).toList();
+        return mapper.entityListToModelList(repo.findAll(hasIdsIn(uuids)));
     }
 
     private List<ProductEntity.StockStatus> stockStatusListOf(List<ProductStockStatus> pssl) {

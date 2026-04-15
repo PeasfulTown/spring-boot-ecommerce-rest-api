@@ -1,8 +1,10 @@
 package xyz.peasfultown.ecommerce.product_service.service;
 
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import xyz.peasfultown.ecommerce.product_api.model.NewProductReq;
 import xyz.peasfultown.ecommerce.product_api.model.Product;
+import xyz.peasfultown.ecommerce.product_api.model.ProductId;
 import xyz.peasfultown.ecommerce.product_api.model.ProductStockStatus;
 
 import java.math.BigDecimal;
@@ -24,4 +26,6 @@ public interface ProductService {
     void deleteProductById(String id);
 
     Product getProductById(String id);
+
+    List<Product> getProducts(List<@Valid ProductId> productId);
 }
