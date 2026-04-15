@@ -193,8 +193,26 @@ components:
         quantity:
           type: integer
           format: int32
-        subTotal:
+        subtotal:
           type: BigDecimal
+
+    ProductStockStatus:
+      type: string
+      enum:
+        - IN_STOCK
+        - OUT_OF_STOCK
+        - LOW_STOCK
+    ProductActiveStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    ProductId:
+      type: object
+      properties:
+        id:
+          type: string
 
     Product:
       type: object
@@ -212,11 +230,16 @@ components:
           type: array
           items:
             type: string
+        stockStatus:
+          $ref: '#/components/schemas/ProductStockStatus'
+        activeStatus:
+          $ref: '#/components/schemas/ProductActiveStatus'
       xml:
         name: Product
 
     AddItemReq:
       type: object
+      required: [ productId, quantity ]
       properties:
         productId:
           type: string

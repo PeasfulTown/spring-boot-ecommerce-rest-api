@@ -39,7 +39,7 @@ public class CartItemEntity {
     @Column(name = "subtotal", nullable = false)
     private BigDecimal subtotal;
 
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "cart_id")
+    @ManyToOne
+    @JoinColumn(name = "cart_id", nullable = false)
     private CartEntity cart;
 }

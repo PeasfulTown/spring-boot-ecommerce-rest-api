@@ -11,5 +11,5 @@ public interface CartRepository extends JpaRepository<CartEntity, UUID> {
     @Query("""
             select c from CartEntity c where c.userId = :userId
             """)
-    Optional<CartEntity> findCartByUserid(UUID userId);
+    Optional<CartEntity> findCartByUserId(UUID userId);
 }
