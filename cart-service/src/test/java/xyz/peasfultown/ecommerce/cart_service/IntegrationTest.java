@@ -29,15 +29,15 @@ import xyz.peasfultown.ecommerce.cart_service.repository.CartRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -132,7 +132,8 @@ public class IntegrationTest {
 
     private void stub_getProductById_returns200(Product prod) throws Exception {
         productService.stubFor(com.github.tomakehurst.wiremock.client.WireMock
-                .get("/api/v1/products/" + prod.getId())
+                .get(urlPathTemplate("/api/v1/products/{id}"))
+                .withPathParam("id", equalTo(prod.getId()))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -295,19 +296,74 @@ public class IntegrationTest {
     }
 
     @Test
-    void addItemToCart_returns200_whenValidInput() throws Exception {
+    void addItemToCart_savesToDatabase() throws Exception {
         UUID userId = UUID.randomUUID();
 
         stub_getProductById_returns200(p1);
-        AddItemReq req = new AddItemReq()
+        AddItemReq r1 = new AddItemReq()
                 .productId(p1.getId())
                 .quantity(2);
 
+        AddItemReq r2 = new AddItemReq()
+                .productId(p2.getId())
+                .quantity(2);
+
+        stub_getProductById_returns200(p1);
         mvc.perform(post("/api/v1/cart/items")
                         .header("X-User-Id", userId.toString())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(req)))
+                        .content(objMapper.writeValueAsString(r1)))
                 .andExpect(status().isOk());
+
+        stub_getProductById_returns200(p2);
+        stub_getProductsByIds_returns200(List.of(p1));
+        mvc.perform(post("/api/v1/cart/items")
+                        .header("X-User-Id", userId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(r2)))
+                .andExpect(status().isOk());
+
+        CartEntity ce = cartRepo.findCartByUserId(userId).get();
+
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(ce.getId(), UUID.fromString(p1.getId()))).isPresent();
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(ce.getId(), UUID.fromString(p2.getId()))).isPresent();
+    }
+
+    @Test
+    void addItemToCart_savesCorrectPricesAndQuantity() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        stub_getProductById_returns200(p1);
+        AddItemReq r1 = new AddItemReq()
+                .productId(p1.getId())
+                .quantity(2);
+
+        AddItemReq r2 = new AddItemReq()
+                .productId(p2.getId())
+                .quantity(2);
+
+        stub_getProductById_returns200(p1);
+        mvc.perform(post("/api/v1/cart/items")
+                        .header("X-User-Id", userId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(r1)))
+                .andExpect(status().isOk());
+
+        stub_getProductById_returns200(p2);
+        stub_getProductsByIds_returns200(List.of(p1));
+        mvc.perform(post("/api/v1/cart/items")
+                        .header("X-User-Id", userId.toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(r2)))
+                .andExpect(status().isOk());
+
+        CartEntity ce = cartRepo.findCartByUserId(userId).get();
+        assertEquals(BigDecimal.valueOf(666.66), ce.getTotalPrice());
+        assertEquals(4, ce.getTotalItems());
+        CartItemEntity cie1 = ciRepo.findCartItemByCartIdAndProductId(ce.getId(), UUID.fromString(p1.getId())).get();
+        assertEquals(BigDecimal.valueOf(222.22), cie1.getSubtotal());
+        CartItemEntity cie2 = ciRepo.findCartItemByCartIdAndProductId(ce.getId(), UUID.fromString(p2.getId())).get();
+        assertEquals(BigDecimal.valueOf(444.44), cie2.getSubtotal());
     }
 
     @Test
@@ -425,4 +481,88 @@ public class IntegrationTest {
         assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p3.getId()))).isNotPresent();
     }
 
+    @Test
+    void removeItemFromCart_removesItemFromDatabase() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        CartEntity cartEntity = new CartEntity();
+        cartEntity.setUserId(userId);
+        cartEntity = cartRepo.save(cartEntity);
+        CartItemEntity ci1 = CartItemEntity.builder()
+                .cart(cartEntity)
+                .productId(UUID.fromString(p1.getId()))
+                .productName(p1.getName())
+                .productPrice(p1.getPrice())
+                .quantity(1)
+                .subtotal(p1.getPrice())
+                .build();
+        CartItemEntity ci2 = CartItemEntity.builder()
+                .cart(cartEntity)
+                .productId(UUID.fromString(p2.getId()))
+                .productName(p2.getName())
+                .productPrice(p2.getPrice())
+                .quantity(2)
+                .subtotal(p2.getPrice().multiply(BigDecimal.valueOf(2)))
+                .build();
+
+        cartEntity.getItems().addAll(List.of(ci1, ci2));
+        cartEntity = cartRepo.save(cartEntity);
+
+        mvc.perform(delete("/api/v1/cart/items/{id}", cartEntity.getItems().get(0).getId())
+                .header("X-User-Id", userId.toString()))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(delete("/api/v1/cart/items/{id}", cartEntity.getItems().get(0).getId())
+                        .header("X-User-Id", userId.toString()))
+                .andExpect(status().isNoContent());
+
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p1.getId()))).isNotPresent();
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(cartEntity.getId(), UUID.fromString(p2.getId()))).isNotPresent();
+    }
+
+    @Test
+    void updateItemQuantity_savesCorrectValuesInDatabase() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        CartEntity cartEntity = new CartEntity();
+        cartEntity.setUserId(userId);
+        cartEntity = cartRepo.save(cartEntity);
+        CartItemEntity ci1 = CartItemEntity.builder()
+                .cart(cartEntity)
+                .productId(UUID.fromString(p1.getId()))
+                .productName(p1.getName())
+                .productPrice(p1.getPrice())
+                .quantity(1)
+                .subtotal(p1.getPrice())
+                .build();
+        CartItemEntity ci2 = CartItemEntity.builder()
+                .cart(cartEntity)
+                .productId(UUID.fromString(p2.getId()))
+                .productName(p2.getName())
+                .productPrice(p2.getPrice())
+                .quantity(1)
+                .subtotal(p2.getPrice().multiply(BigDecimal.valueOf(2)))
+                .build();
+        cartEntity.getItems().addAll(List.of(ci1, ci2));
+        cartEntity.setTotalPrice(BigDecimal.valueOf(333.33));
+        cartEntity.setTotalItems(2);
+        cartEntity = cartRepo.save(cartEntity);
+
+        UpdateItemQuantityReq req = new UpdateItemQuantityReq()
+                .quantity(4);
+        String json = mvc.perform(patch("/api/v1/cart/items/{id}", cartEntity.getItems().get(0).getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req))
+                .header("X-User-Id", userId.toString()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        CartItem resultObj = objMapper.readValue(json, CartItem.class);
+        assertEquals(4, resultObj.getQuantity());
+        assertEquals(BigDecimal.valueOf(444.44), resultObj.getSubtotal());
+
+        cartEntity = cartRepo.findCartByUserId(userId).get();
+        assertEquals(BigDecimal.valueOf(666.66), cartEntity.getTotalPrice());
+        assertEquals(5, cartEntity.getTotalItems());
+    }
 }

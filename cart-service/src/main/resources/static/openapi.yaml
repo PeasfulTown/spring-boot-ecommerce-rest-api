@@ -69,6 +69,11 @@ paths:
       operationId: updateItemQuantity
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         description: Request body with product ID and new quantity
         content:
@@ -89,6 +94,11 @@ paths:
       operationId: deleteItemFromCart
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
         '204':
           description: Item removal successful
@@ -249,6 +259,7 @@ components:
 
     UpdateItemQuantityReq:
       type: object
+      required: [ quantity ]
       properties:
         quantity:
           type: integer

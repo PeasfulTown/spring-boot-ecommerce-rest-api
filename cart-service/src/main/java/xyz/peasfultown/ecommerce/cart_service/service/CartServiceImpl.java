@@ -7,6 +7,7 @@ import xyz.peasfultown.ecommerce.cart_api.model.*;
 import xyz.peasfultown.ecommerce.cart_service.client.ProductServiceClient;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartItemEntity;
+import xyz.peasfultown.ecommerce.cart_service.exception.CartNotFoundException;
 import xyz.peasfultown.ecommerce.cart_service.exception.ProductOutOfStockException;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartItemMapper;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartMapper;
@@ -149,9 +150,46 @@ public class CartServiceImpl implements CartService {
         // don't need to use get user cart private function which updates cart items
         // since the cart is being cleared anyway
         CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
-                .orElseThrow(() -> new IllegalArgumentException("Cart not found by user ID"));
+                .orElseThrow(() -> new CartNotFoundException(String.format(
+                        "Cart not found by user ID: %s", userId
+                )));
         ciRepo.deleteAll(ce.getItems());
         ce.getItems().clear();
         repo.save(ce);
+    }
+
+    @Override
+    public void removeItemFromCart(String userId, String itemId) {
+        CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
+                .orElseThrow(() -> new CartNotFoundException(String.format(
+                        "Cart not found by user ID: %s", userId
+                )));
+
+        CartItemEntity cie = ce.getItems().stream().filter(ci -> ci.getId().equals(UUID.fromString(itemId))).findFirst().get();
+        ce.getItems().remove(cie);
+        ciRepo.delete(cie);
+        repo.save(ce);
+    }
+
+    @Override
+    public CartItem updateCartItemQuantity(String userId, String itemId, UpdateItemQuantityReq req) {
+        CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
+                .orElseThrow(() -> new CartNotFoundException(String.format(
+                        "Cart not found by user ID: %s", userId
+                )));
+
+        CartItemEntity cie = ce.getItems().stream().filter(i ->
+                i.getId().equals(UUID.fromString(itemId))).findFirst().get();
+
+        ce.setTotalPrice(ce.getTotalPrice().subtract(cie.getSubtotal()));
+        ce.setTotalItems(ce.getTotalItems() - cie.getQuantity());
+        cie.setQuantity(req.getQuantity());
+        cie.setSubtotal(cie.getProductPrice().multiply(BigDecimal.valueOf(req.getQuantity())));
+        ce.setTotalPrice(ce.getTotalPrice().add(cie.getSubtotal()));
+        ce.setTotalItems(ce.getTotalItems() + req.getQuantity());
+
+        cie = ciRepo.save(cie);
+        repo.save(ce);
+        return ciMapper.toModel(cie);
     }
 }
