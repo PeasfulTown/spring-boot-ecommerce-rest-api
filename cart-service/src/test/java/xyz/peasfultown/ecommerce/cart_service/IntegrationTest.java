@@ -3,11 +3,17 @@ package xyz.peasfultown.ecommerce.cart_service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -22,14 +28,18 @@ import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
 import xyz.peasfultown.ecommerce.cart_api.model.*;
+import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartItemEntity;
+import xyz.peasfultown.ecommerce.cart_service.mapper.CartItemMapper;
 import xyz.peasfultown.ecommerce.cart_service.repository.CartItemRepository;
 import xyz.peasfultown.ecommerce.cart_service.repository.CartRepository;
+import xyz.peasfultown.ecommerce.cart_service.service.CartService;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,6 +95,24 @@ public class IntegrationTest {
     @Autowired
     private CartItemRepository ciRepo;
 
+    @Autowired
+    private CartItemMapper ciMapper;
+
+    @Autowired
+    private CartService cartService;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    private static RabbitAdmin rabbitAdmin;
+
+    @Autowired
+    private void setRabbitAdmin(RabbitAdmin rabbitAdmin) {
+        IntegrationTest.rabbitAdmin = rabbitAdmin;
+    }
+
+    private CountDownLatch latch = new CountDownLatch(1);
+
     private Product p1;
     private Product p2;
     private Product p3;
@@ -129,6 +157,17 @@ public class IntegrationTest {
                 .stockStatus(ProductStockStatus.IN_STOCK)
                 .activeStatus(ProductActiveStatus.ACTIVE);
     }
+
+    @AfterEach
+    void tear() {
+        rabbitAdmin.purgeQueue(RabbitMqConstants.queue);
+    }
+
+    @AfterAll
+    static void teardown() {
+        rabbitAdmin.deleteExchange(RabbitMqConstants.exchange);
+    }
+
 
     private void stub_getProductById_returns200(Product prod) throws Exception {
         productService.stubFor(com.github.tomakehurst.wiremock.client.WireMock
@@ -470,7 +509,7 @@ public class IntegrationTest {
 
         mvc.perform(delete("/api/v1/cart")
                         .contentType(MediaType.APPLICATION_JSON)
-                .header("X-User-Id", userId.toString()))
+                        .header("X-User-Id", userId.toString()))
                 .andExpect(status().isNoContent());
 
         cartEntity = cartRepo.findCartByUserId(userId).get();
@@ -509,7 +548,7 @@ public class IntegrationTest {
         cartEntity = cartRepo.save(cartEntity);
 
         mvc.perform(delete("/api/v1/cart/items/{id}", cartEntity.getItems().get(0).getId())
-                .header("X-User-Id", userId.toString()))
+                        .header("X-User-Id", userId.toString()))
                 .andExpect(status().isNoContent());
 
         mvc.perform(delete("/api/v1/cart/items/{id}", cartEntity.getItems().get(0).getId())
@@ -551,9 +590,9 @@ public class IntegrationTest {
         UpdateItemQuantityReq req = new UpdateItemQuantityReq()
                 .quantity(4);
         String json = mvc.perform(patch("/api/v1/cart/items/{id}", cartEntity.getItems().get(0).getId())
-                .contentType(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(objMapper.writeValueAsString(req))
-                .header("X-User-Id", userId.toString()))
+                        .header("X-User-Id", userId.toString()))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -564,5 +603,95 @@ public class IntegrationTest {
         cartEntity = cartRepo.findCartByUserId(userId).get();
         assertEquals(BigDecimal.valueOf(666.66), cartEntity.getTotalPrice());
         assertEquals(5, cartEntity.getTotalItems());
+    }
+
+    @Test
+    void checkoutCart_sendsMessage() throws Exception {
+        UUID userId = UUID.randomUUID();
+        CartItem ci1 = CartItem.builder()
+                .id(UUID.randomUUID().toString())
+                .productId(p1.getId())
+                .productName(p1.getName())
+                .productPrice(p1.getPrice())
+                .quantity(1)
+                .subtotal(p1.getPrice())
+                .build();
+        CartItem ci2 = CartItem.builder()
+                .id(UUID.randomUUID().toString())
+                .productId(p2.getId())
+                .productName(p2.getName())
+                .productPrice(p2.getPrice())
+                .quantity(2)
+                .subtotal(p1.getPrice().multiply(BigDecimal.valueOf(2)))
+                .build();
+
+        List<CartItem> cartItems = List.of(ci1, ci2);
+        CartCheckoutReq req = CartCheckoutReq.builder()
+                .userId(userId.toString())
+                .addressId(UUID.randomUUID().toString())
+                .cardId(UUID.randomUUID().toString())
+                .cartItems(cartItems)
+                .build();
+
+        mvc.perform(post("/api/v1/cart/checkout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req))
+                        .header("X-User-Id", userId.toString()))
+                .andExpect(status().isAccepted());
+
+        CartCheckoutReq result = rabbitTemplate.receiveAndConvert(RabbitMqConstants.queue,
+                10_000, new ParameterizedTypeReference<CartCheckoutReq>() {
+                });
+        assertEquals(req, result);
+
+    }
+
+    @Test
+    void checkoutCart_clearsCart() throws Exception {
+        UUID userId = UUID.randomUUID();
+
+        CartEntity ce = CartEntity.builder()
+                .userId(userId)
+                .totalItems(3)
+                .totalPrice(BigDecimal.valueOf(444.44))
+                .build();
+        ce = cartRepo.save(ce);
+
+        CartItemEntity ci1 = CartItemEntity.builder()
+                .cart(ce)
+                .productId(UUID.fromString(p1.getId()))
+                .productName(p1.getName())
+                .productPrice(p1.getPrice())
+                .quantity(2)
+                .subtotal(BigDecimal.valueOf(222.22))
+                .build();
+        CartItemEntity ci2 = CartItemEntity.builder()
+                .cart(ce)
+                .productId(UUID.fromString(p2.getId()))
+                .productName(p2.getName())
+                .productPrice(p2.getPrice())
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(222.22))
+                .build();
+
+        ce.getItems().addAll(List.of(ci1, ci2));
+        ce = cartRepo.save(ce);
+        List<CartItemEntity> cartItemEntities = ciRepo.findCartItemsByCartId(ce.getId());
+
+        CartCheckoutReq req = CartCheckoutReq.builder()
+                .userId(userId.toString())
+                .addressId(UUID.randomUUID().toString())
+                .cardId(UUID.randomUUID().toString())
+                .cartItems(ciMapper.toModel(cartItemEntities))
+                .build();
+
+        mvc.perform(post("/api/v1/cart/checkout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objMapper.writeValueAsString(req))
+                .header("X-User-Id", userId.toString()))
+                        .andExpect(status().isAccepted());
+
+        assertThat(cartRepo.findCartByUserId(userId).get().getItems()).isEmpty();
+        assertThat(ciRepo.findCartItemsByCartId(ce.getId())).isEmpty();
     }
 }

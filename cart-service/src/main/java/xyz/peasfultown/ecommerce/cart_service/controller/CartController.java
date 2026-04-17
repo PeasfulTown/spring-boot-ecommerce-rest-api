@@ -4,10 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import xyz.peasfultown.ecommerce.cart_api.CartApi;
-import xyz.peasfultown.ecommerce.cart_api.model.AddItemReq;
-import xyz.peasfultown.ecommerce.cart_api.model.Cart;
-import xyz.peasfultown.ecommerce.cart_api.model.CartItem;
-import xyz.peasfultown.ecommerce.cart_api.model.UpdateItemQuantityReq;
+import xyz.peasfultown.ecommerce.cart_api.model.*;
 import xyz.peasfultown.ecommerce.cart_service.service.CartService;
 
 import static org.springframework.http.ResponseEntity.ok;
@@ -46,5 +43,11 @@ public class CartController implements CartApi {
     @Override
     public ResponseEntity<CartItem> updateItemQuantity(String userId, String itemId, UpdateItemQuantityReq req) throws Exception {
         return ok(service.updateCartItemQuantity(userId, itemId, req));
+    }
+
+    @Override
+    public ResponseEntity<Void> submitOrder(String userId, CartCheckoutReq cartCheckoutReq) throws Exception {
+        service.checkoutCart(userId, cartCheckoutReq);
+        return status(HttpStatus.ACCEPTED).build();
     }
 }

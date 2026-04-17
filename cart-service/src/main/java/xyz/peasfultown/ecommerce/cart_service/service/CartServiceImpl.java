@@ -1,12 +1,22 @@
 package xyz.peasfultown.ecommerce.cart_service.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessagePropertiesBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.cart_api.model.*;
 import xyz.peasfultown.ecommerce.cart_service.client.ProductServiceClient;
+import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartItemEntity;
+import xyz.peasfultown.ecommerce.cart_service.exception.CartCheckoutMessageException;
 import xyz.peasfultown.ecommerce.cart_service.exception.CartNotFoundException;
 import xyz.peasfultown.ecommerce.cart_service.exception.ProductOutOfStockException;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartItemMapper;
@@ -20,20 +30,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class CartServiceImpl implements CartService {
     private final CartRepository repo;
     private final CartItemRepository ciRepo;
     private final CartMapper mapper;
     private final CartItemMapper ciMapper;
     private final ProductServiceClient prodClient;
+    private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objMapper;
 
     public CartServiceImpl(CartRepository repo, CartItemRepository ciRepo, CartMapper mapper,
-                           CartItemMapper ciMapper, ProductServiceClient prodClient) {
+                           CartItemMapper ciMapper, ProductServiceClient prodClient, RabbitTemplate rabbitTemplate, ObjectMapper objMapper) {
         this.repo = repo;
         this.ciRepo = ciRepo;
         this.mapper = mapper;
         this.ciMapper = ciMapper;
         this.prodClient = prodClient;
+        this.rabbitTemplate = rabbitTemplate;
+        this.objMapper = objMapper;
     }
 
     @Override
@@ -192,4 +207,26 @@ public class CartServiceImpl implements CartService {
         repo.save(ce);
         return ciMapper.toModel(cie);
     }
+
+    @Override
+    public void checkoutCart(String userId, CartCheckoutReq cartCheckoutReq) {
+        // TODO: maybe check with all services whether related resources (card, address) exist before sending them to order service
+        // TODO: maybe query the cart from the database instead of just accepting the object
+        try {
+            Message jsonMessage = MessageBuilder.withBody(objMapper.writeValueAsBytes(cartCheckoutReq))
+                    .andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json")
+                            .build()).build();
+            rabbitTemplate.send(RabbitMqConstants.bindingKey, jsonMessage);
+            CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
+                    .orElseThrow(() -> new CartNotFoundException(String.format(
+                            "Cart not found by user ID: %s", userId
+                    )));
+            ciRepo.deleteAll(ce.getItems());
+            ce.getItems().clear();
+            repo.save(ce);
+        } catch (JsonProcessingException e) {
+            throw new CartCheckoutMessageException("Unable to send message to queue");
+        }
+    }
+
 }
