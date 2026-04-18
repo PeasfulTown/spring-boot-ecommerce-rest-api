@@ -1,0 +1,28 @@
+spring:
+  profiles.active: ${ACTIVE_PROFILE}
+
+  application:
+    name: OrderService
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    locations: classpath:db/migration
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_POST:5672}
+    virtual-host: /
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
+    template:
+      default-exchange: ${RABBITMQ_DEFAULT_EXCHANGE}
+
+server.port: 8084
