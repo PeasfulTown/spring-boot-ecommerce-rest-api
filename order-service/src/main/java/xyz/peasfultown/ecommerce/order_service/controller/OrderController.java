@@ -10,6 +10,7 @@ import xyz.peasfultown.ecommerce.order_api.model.Order;
 import xyz.peasfultown.ecommerce.order_api.model.PagedOrderResponse;
 import xyz.peasfultown.ecommerce.order_api.model.ResponsePage;
 import xyz.peasfultown.ecommerce.order_api.model.UpdateOrderStatusReq;
+import xyz.peasfultown.ecommerce.order_service.controller.aspect.AdminOnly;
 import xyz.peasfultown.ecommerce.order_service.service.OrderService;
 
 import java.util.List;
@@ -40,9 +41,9 @@ public class OrderController implements OrderApi {
         return ok(response);
     }
 
+    @AdminOnly
     @Override
-    public ResponseEntity<PagedOrderResponse> getAllUserOrders(Integer page, Integer size) throws Exception {
-        // TODO: check user role
+    public ResponseEntity<PagedOrderResponse> getAllUsersOrders(String userRole, Integer page, Integer size) throws Exception {
         Page<Order> orders = service.queryOrders(page, size);
         PagedOrderResponse response = new PagedOrderResponse();
         response.content(orders.getContent())
@@ -55,10 +56,11 @@ public class OrderController implements OrderApi {
     }
 
     @Override
-    public ResponseEntity<Order> getOrderById(String userId, String orderId) throws Exception {
+    public ResponseEntity<Order> getMyOrderById(String userId, String orderId) throws Exception {
         return ok(service.getOrderById(userId, orderId));
     }
 
+    @AdminOnly
     @Override
     public ResponseEntity<PagedOrderResponse> getOrdersByStatus(String userId, String status, Integer page, Integer size) throws Exception {
         Page<Order> orders = service.getUserPagedOrdersByUserIdAndOrderStatus(userId, status, page, size);
@@ -72,13 +74,15 @@ public class OrderController implements OrderApi {
         return ok(pagedOrders);
     }
 
+    @AdminOnly
     @Override
-    public ResponseEntity<List<Order>> getOrdersByUserId(String userId) throws Exception {
+    public ResponseEntity<List<Order>> getOrdersByUserId(String userRole, String userId) throws Exception {
         return ok(service.getOrdersByUserId(userId));
     }
 
+    @AdminOnly
     @Override
-    public ResponseEntity<Void> updateOrderStatus(String orderId, UpdateOrderStatusReq updateOrderStatusReq) throws Exception {
+    public ResponseEntity<Void> updateOrderStatus(String userRole, String orderId, UpdateOrderStatusReq updateOrderStatusReq) throws Exception {
         service.updateOrderStatus(orderId, updateOrderStatusReq);
         return status(HttpStatus.NO_CONTENT).build();
     }

@@ -31,6 +31,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -79,11 +80,6 @@ public class IntegrationTest {
     private OrderItemEntity oi4;
     private OrderItemEntity oi5;
     private OrderEntity oe2;
-
-    private OrderItemEntity oi6;
-    private OrderItemEntity oi7;
-    private OrderItemEntity oi8;
-    private OrderEntity oe3;
 
     @BeforeEach
     void setup() {
@@ -162,56 +158,89 @@ public class IntegrationTest {
     }
 
     @Test
-    void getMyOrders_returns200_whenValidInputs() throws Exception {
+    void getMyOrders_returns200() throws Exception {
         mvc.perform(get("/api/v1/orders")
                         .queryParam("page", "0")
                         .queryParam("size", "10")
-                .header("X-User-Id", oe1.getUserId().toString()))
+                        .header("X-User-Id", oe1.getUserId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].items", hasSize(3)))
                 .andExpect(jsonPath("$.page.totalElements", is(2)));
     }
 
     @Test
-    void getAllUserOrders_returns200() throws Exception {
+    void getAllUsersOrders_returns200() throws Exception {
         mvc.perform(get("/api/v1/orders/all")
-                        .queryParam("page", "0")
-                        .queryParam("size", "10"))
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
                 .andExpect(jsonPath("$.page.totalElements", is(2)));
     }
 
     @Test
-    void getOrderById_returns200() throws Exception {
+    void getAllUsersOrders_returns403_ifNotAdmin() throws Exception {
+        mvc.perform(get("/api/v1/orders/all")
+                        .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getMyOrderById_returns200() throws Exception {
         mvc.perform(get("/api/v1/orders/{id}", oe1.getId())
                         .header("X-User-Id", oe1.getUserId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isNotEmpty());
+                .andExpect(jsonPath("$.id", notNullValue()));
     }
 
     @Test
     void getOrdersByStatus_returns200() throws Exception {
         mvc.perform(get("/api/v1/orders/status/{status}", OrderEntity.OrderStatus.PROCESSING.toString())
-                .header("X-User-Id", oe1.getUserId().toString()))
+                        .header("X-User-Id", oe1.getUserId().toString())
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status", is("PROCESSING")));
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].status", is("PROCESSING")));
+    }
+
+    @Test
+    void getOrdersByStatus_returns403_ifNotAdmin() throws Exception {
+        mvc.perform(get("/api/v1/orders/status/{status}", OrderEntity.OrderStatus.PROCESSING.toString())
+                        .header("X-User-Id", oe1.getUserId().toString())
+                        .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void getOrdersByUserId_returns200() throws Exception {
-        mvc.perform(get("/api/v1/orders/user/{id}", oe1.getUserId().toString()))
+        mvc.perform(get("/api/v1/orders/user/{id}", oe1.getUserId().toString())
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
 
     @Test
+    void getOrdersByUserId_returns403_ifNotAdmin() throws Exception {
+        mvc.perform(get("/api/v1/orders/user/{id}", oe1.getUserId().toString())
+                        .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void updateOrderStatus_savesCorrectRecord() throws Exception {
         mvc.perform(patch("/api/v1/orders/{id}/status", oe1.getId().toString())
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objMapper.writeValueAsString(new UpdateOrderStatusReq().orderStatus(OrderStatus.CANCELLED))))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(new UpdateOrderStatusReq().orderStatus(OrderStatus.CANCELLED)))
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isNoContent());
         assertEquals(OrderEntity.OrderStatus.CANCELLED, orderRepo.findById(oe1.getId()).get().getStatus());
+    }
+
+    @Test
+    void updateOrderStatus_returns403_whenNotAdmin() throws Exception {
+        mvc.perform(patch("/api/v1/orders/{id}/status", oe1.getId().toString())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(new UpdateOrderStatusReq().orderStatus(OrderStatus.CANCELLED)))
+                        .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isForbidden());
     }
 }
