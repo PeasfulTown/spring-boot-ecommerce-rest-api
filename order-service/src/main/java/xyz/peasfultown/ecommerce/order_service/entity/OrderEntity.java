@@ -55,9 +55,10 @@ public class OrderEntity {
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private OrderStatus status;
+    private OrderStatus status = OrderStatus.PROCESSING;
 
     @Builder.Default
     @OneToMany(mappedBy = "order", fetch = FetchType.EAGER)
@@ -65,7 +66,5 @@ public class OrderEntity {
 
     public enum OrderStatus {
         PROCESSING, SHIPPED, OUT_FOR_DELIVERY, COMPLETED, CANCELLED;
-
-
     }
 }

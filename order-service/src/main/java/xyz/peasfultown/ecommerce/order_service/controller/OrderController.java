@@ -2,15 +2,20 @@ package xyz.peasfultown.ecommerce.order_service.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import xyz.peasfultown.ecommerce.order_api.OrderApi;
 import xyz.peasfultown.ecommerce.order_api.model.Order;
 import xyz.peasfultown.ecommerce.order_api.model.PagedOrderResponse;
 import xyz.peasfultown.ecommerce.order_api.model.ResponsePage;
+import xyz.peasfultown.ecommerce.order_api.model.UpdateOrderStatusReq;
 import xyz.peasfultown.ecommerce.order_service.service.OrderService;
 
+import java.util.List;
+
 import static org.springframework.http.ResponseEntity.ok;
+import static org.springframework.http.ResponseEntity.status;
 
 @RestController
 public class OrderController implements OrderApi {
@@ -33,5 +38,48 @@ public class OrderController implements OrderApi {
                         .totalPages(orders.getTotalPages()));
 
         return ok(response);
+    }
+
+    @Override
+    public ResponseEntity<PagedOrderResponse> getAllUserOrders(Integer page, Integer size) throws Exception {
+        // TODO: check user role
+        Page<Order> orders = service.queryOrders(page, size);
+        PagedOrderResponse response = new PagedOrderResponse();
+        response.content(orders.getContent())
+                .page(new ResponsePage()
+                        .number(orders.getNumber())
+                        .size(orders.getSize())
+                        .totalElements(orders.getTotalElements())
+                        .totalPages(orders.getTotalPages()));
+        return ok(response);
+    }
+
+    @Override
+    public ResponseEntity<Order> getOrderById(String userId, String orderId) throws Exception {
+        return ok(service.getOrderById(userId, orderId));
+    }
+
+    @Override
+    public ResponseEntity<PagedOrderResponse> getOrdersByStatus(String userId, String status, Integer page, Integer size) throws Exception {
+        Page<Order> orders = service.getUserPagedOrdersByUserIdAndOrderStatus(userId, status, page, size);
+        PagedOrderResponse pagedOrders = new PagedOrderResponse()
+                .content(orders.getContent())
+                .page(new ResponsePage()
+                        .number(orders.getNumber())
+                        .size(orders.getSize())
+                        .totalElements(orders.getTotalElements())
+                        .totalPages(orders.getTotalPages()));
+        return ok(pagedOrders);
+    }
+
+    @Override
+    public ResponseEntity<List<Order>> getOrdersByUserId(String userId) throws Exception {
+        return ok(service.getOrdersByUserId(userId));
+    }
+
+    @Override
+    public ResponseEntity<Void> updateOrderStatus(String orderId, UpdateOrderStatusReq updateOrderStatusReq) throws Exception {
+        service.updateOrderStatus(orderId, updateOrderStatusReq);
+        return status(HttpStatus.NO_CONTENT).build();
     }
 }
