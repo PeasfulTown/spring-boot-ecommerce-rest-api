@@ -143,37 +143,6 @@ components:
           - CUSTOMER
 
   schemas:
-    PagedResponsePage:
-      type: object
-      properties:
-        size:
-          type: integer
-        number:
-          type: integer
-        totalElements:
-          type: integer
-          format: int64
-        totalPages:
-          type: integer
-
-    PagedResponse:
-      type: object
-      properties:
-        content:
-          type: array
-          items: {}
-        page:
-          $ref: '#/components/schemas/PagedResponsePage'
-
-    PagedProductResponse:
-      allOf:
-        - $ref: '#/components/schemas/PagedResponse'
-        - type: object
-          properties:
-            content:
-              type: array
-              items:
-                $ref: '#/components/schemas/Product'
 
     ErrorResponse:
       type: object
@@ -231,6 +200,7 @@ components:
         - IN_STOCK
         - OUT_OF_STOCK
         - LOW_STOCK
+
     ProductActiveStatus:
       type: string
       enum:
@@ -286,16 +256,9 @@ components:
 
     CartCheckoutReq:
       type: object
-      required: [ userId, addressId, cartId, cartItems ]
+      required: [ addressId, cardId ]
       properties:
-        userId:
-          type: string
         addressId:
           type: string
         cardId:
           type: string
-        cartItems:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/CartItem'

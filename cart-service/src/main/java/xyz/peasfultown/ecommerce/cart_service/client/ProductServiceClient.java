@@ -8,15 +8,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import xyz.peasfultown.ecommerce.cart_api.model.Product;
 import xyz.peasfultown.ecommerce.cart_api.model.ProductId;
 import xyz.peasfultown.ecommerce.cart_service.config.OpenFeignConfig;
-import xyz.peasfultown.ecommerce.cart_service.exception.CustomProductServiceErrorDecoder;
+import xyz.peasfultown.ecommerce.cart_service.exception.CustomServiceErrorDecoder;
 
 import java.util.List;
 
 @FeignClient(
         name = "product-service",
-        url = "${services.product-service-url}",
+        url = "${services.product-service.url}",
         path = "/api/v1/products",
-        configuration = { OpenFeignConfig.class, CustomProductServiceErrorDecoder.class }
+        configuration = { CustomServiceErrorDecoder.class }
 )
 public interface ProductServiceClient {
     @GetMapping("/{id}")

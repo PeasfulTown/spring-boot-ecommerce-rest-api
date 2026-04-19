@@ -13,11 +13,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.cart_api.model.*;
 import xyz.peasfultown.ecommerce.cart_service.client.ProductServiceClient;
+import xyz.peasfultown.ecommerce.cart_service.client.UserServiceClient;
 import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
+import xyz.peasfultown.ecommerce.cart_service.dto.Address;
+import xyz.peasfultown.ecommerce.cart_service.dto.OrderSubmission;
+import xyz.peasfultown.ecommerce.cart_service.dto.User;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartItemEntity;
 import xyz.peasfultown.ecommerce.cart_service.exception.CartCheckoutMessageException;
 import xyz.peasfultown.ecommerce.cart_service.exception.CartNotFoundException;
+import xyz.peasfultown.ecommerce.cart_service.exception.EmptyCartCheckoutException;
 import xyz.peasfultown.ecommerce.cart_service.exception.ProductOutOfStockException;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartItemMapper;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartMapper;
@@ -37,16 +42,18 @@ public class CartServiceImpl implements CartService {
     private final CartMapper mapper;
     private final CartItemMapper ciMapper;
     private final ProductServiceClient prodClient;
+    private final UserServiceClient userClient;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objMapper;
 
     public CartServiceImpl(CartRepository repo, CartItemRepository ciRepo, CartMapper mapper,
-                           CartItemMapper ciMapper, ProductServiceClient prodClient, RabbitTemplate rabbitTemplate, ObjectMapper objMapper) {
+                           CartItemMapper ciMapper, ProductServiceClient prodClient, UserServiceClient userClient, RabbitTemplate rabbitTemplate, ObjectMapper objMapper) {
         this.repo = repo;
         this.ciRepo = ciRepo;
         this.mapper = mapper;
         this.ciMapper = ciMapper;
         this.prodClient = prodClient;
+        this.userClient = userClient;
         this.rabbitTemplate = rabbitTemplate;
         this.objMapper = objMapper;
     }
@@ -210,23 +217,25 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public void checkoutCart(String userId, CartCheckoutReq cartCheckoutReq) {
-        // TODO: maybe check with all services whether related resources (card, address) exist before sending them to order service
-        // TODO: maybe query the cart from the database instead of just accepting the object
+        CartEntity cart = getCartEntityByUserId(userId);
+        if (cart.getItems().size() == 0)
+            throw new EmptyCartCheckoutException("Cannot checkout with an empty cart");
+        User user = userClient.getUserById(userId).getBody();
+        Address address = userClient.getAddressById(cartCheckoutReq.getAddressId()).getBody();
+        OrderSubmission orderSubmission = new OrderSubmission(user, address, mapper.toModel(cart));
+
         try {
-            Message jsonMessage = MessageBuilder.withBody(objMapper.writeValueAsBytes(cartCheckoutReq))
+            Message jsonMessage = MessageBuilder.withBody(objMapper.writeValueAsBytes(orderSubmission))
                     .andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json")
                             .build()).build();
             rabbitTemplate.send(RabbitMqConstants.bindingKey, jsonMessage);
-            CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
-                    .orElseThrow(() -> new CartNotFoundException(String.format(
-                            "Cart not found by user ID: %s", userId
-                    )));
-            ciRepo.deleteAll(ce.getItems());
-            ce.getItems().clear();
-            repo.save(ce);
         } catch (JsonProcessingException e) {
-            throw new CartCheckoutMessageException("Unable to send message to queue");
+            throw new RuntimeException("Unable to process JSON message");
         }
+
+        ciRepo.deleteAll(cart.getItems());
+        cart.getItems().clear();
+        repo.save(cart);
     }
 
 }

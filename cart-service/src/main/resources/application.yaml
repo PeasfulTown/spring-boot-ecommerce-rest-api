@@ -25,6 +25,10 @@ spring:
     template:
       default-exchange: ${RABBITMQ_DEFAULT_EXCHANGE}
 
-services.product-service-url: ${PRODUCT_SERVICE_URL}
+services:
+  product-service:
+    url: ${PRODUCT_SERVICE_URL}
+  user-service:
+    url: ${USER_SERVICE_URL}
 
 server.port: 8083

@@ -44,7 +44,7 @@ public class RabbitMqConfig {
 
     @Bean
     public Queue queue() {
-        return new Queue(RabbitMqConstants.queue);
+        return new Queue(RabbitMqConstants.orderSubmitted_queue);
     }
 
     @Bean

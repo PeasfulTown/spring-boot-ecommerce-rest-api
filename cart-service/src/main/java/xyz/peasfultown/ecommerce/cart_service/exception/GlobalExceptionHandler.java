@@ -1,6 +1,8 @@
 package xyz.peasfultown.ecommerce.cart_service.exception;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +15,21 @@ import java.time.OffsetDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    private final ObjectMapper objMapper;
+
+    @Autowired
+    public GlobalExceptionHandler(ObjectMapper objMapper) {
+        this.objMapper = objMapper;
+    }
+
     @ExceptionHandler(ServiceClientException.class)
     public ResponseEntity<ErrorResponse> clientExceptionHandler(HttpServletRequest req,
-                                                                ServiceClientException exception) {
+                                                                ServiceClientException exception) throws Exception {
+//        ErrorResponse err = objMapper.readValue(exception.getResponse().body().asInputStream(), ErrorResponse.class);
         ErrorResponse err = new ErrorResponse()
                 .status(exception.getStatus().value())
                 .error(exception.getClass().toString())
-                .message(exception.getReason())
+                .message(exception.getResponse().reason() + "@" + exception.getResponse().request().url())
                 .path(req.getRequestURI())
                 .timestamp(OffsetDateTime.now());
 
@@ -44,7 +54,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private HttpStatusCode determineHttpStatus(Throwable exception) {
         HttpStatusCode status;
         if (exception instanceof ProductOutOfStockException
-            || exception instanceof IllegalArgumentException)
+            || exception instanceof IllegalArgumentException
+            || exception instanceof EmptyCartCheckoutException)
             status = HttpStatus.BAD_REQUEST;
         else if (exception instanceof ProductNotFoundException)
             status = HttpStatus.NOT_FOUND;
