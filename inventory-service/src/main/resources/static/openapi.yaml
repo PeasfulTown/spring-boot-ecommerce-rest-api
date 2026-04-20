@@ -1,0 +1,105 @@
+openapi: 3.0.1
+info:
+  title: E-Commerce Inventory Service
+  description: |
+    Handles the product inventory management part of the e-commerce microservices platform
+  contact:
+    email: emrin4@gmail.com
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  version: 0.0.1
+
+tags:
+  - name: inventory
+    description: Product inventory management
+
+paths:
+
+components:
+
+  parameters:
+
+    UserIdHeader:
+      name: X-User-Id
+      in: header
+      required: true
+      schema:
+        type: string
+
+    UserRoleHeader:
+      name: X-User-Role
+      in: header
+      required: true
+      schema:
+        type: string
+        enum:
+          - ADMIN
+          - CUSTOMER
+
+    UserIdPath:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    PageNumber:
+      name: page
+      in: query
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    PageSize:
+      name: size
+      in: query
+      schema:
+        type: integer
+        format: int32
+        default: 10
+
+  schemas:
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [ status, message ]
+
+    ResponsePage:
+      type: object
+      properties:
+        number:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+
+    PagedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: {}
+        page:
+          $ref: '#/components/schemas/ResponsePage'
+
