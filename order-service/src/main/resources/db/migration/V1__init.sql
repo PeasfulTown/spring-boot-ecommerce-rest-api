@@ -1,5 +1,5 @@
 create table if not exists `order` (
-    id varchar(36) not null default (uuid()),
+    id varchar(36) not null,
     user_id varchar(36) not null,
     email varchar(50) not null,
     phone varchar(10) not null,
@@ -10,12 +10,13 @@ create table if not exists `order` (
     country varchar(50) not null,
     postal_code varchar(50) not null,
     total_price decimal(10, 2) not null,
+    item_count int unsigned not null,
     status enum("PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "COMPLETED", "CANCELLED") not null,
     primary key (id)
 );
 
 create table if not exists order_item (
-    id varchar(36) not null default (uuid()),
+    id varchar(36) not null,
     product_id varchar(36) not null,
     product_name varchar(50) not null,
     product_price decimal(10, 2) not null,

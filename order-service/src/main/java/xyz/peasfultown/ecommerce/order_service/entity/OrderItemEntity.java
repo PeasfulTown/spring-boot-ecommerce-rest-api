@@ -17,10 +17,10 @@ import java.util.UUID;
 @Builder
 public class OrderItemEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "product_id", nullable = false)

@@ -19,10 +19,10 @@ import java.util.UUID;
 @Builder
 public class OrderEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "user_id", nullable = false, updatable = false)
@@ -55,13 +55,16 @@ public class OrderEntity {
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
+    @Column(name = "item_count", nullable = false)
+    private int itemCount;
+
     @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private OrderStatus status = OrderStatus.PROCESSING;
 
     @Builder.Default
-    @OneToMany(mappedBy = "order", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private List<OrderItemEntity> items = new ArrayList<>();
 
     public enum OrderStatus {
