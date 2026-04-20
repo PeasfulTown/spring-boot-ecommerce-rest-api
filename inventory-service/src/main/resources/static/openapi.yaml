@@ -15,6 +15,98 @@ tags:
     description: Product inventory management
 
 paths:
+  /api/v1/inventory:
+    get:
+      tags: [ inventory ]
+      summary: Get all inventory
+      operationId: getAllProductInventory
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedInventoryResponse'
+
+  /api/v1/inventory/{productId}:
+    get:
+      tags: [ inventory ]
+      summary: Get inventory for product by ID
+      operationId: getProductInventoryByProductId
+      parameters:
+        - $ref: '#/components/parameters/ProductIdPath'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inventory'
+        '404':
+          description: Product not found by ID
+
+
+
+    put:
+      tags: [ inventory ]
+      summary: Update product stock (admin)
+      operationId: updateProductInventoryById
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/ProductIdPath'
+      requestBody:
+        description: Update request object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryReq'
+      responses:
+        '204':
+          description: Successful update
+          content: {}
+        '404':
+          description: Product not found by ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/inventory/low-stock:
+    get:
+      tags: [ inventory ]
+      summary: Get all low stock products (admin)
+      operationId: getLowStockProducts
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedInventoryResponse'
+
+  /api/v1/inventory/out-of-stock:
+    get:
+      tags: [ inventory ]
+      summary: Get all out of stuck products (admin)
+      operationId: getOutOfStockProducts
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedInventoryResponse'
 
 components:
 
@@ -37,8 +129,8 @@ components:
           - ADMIN
           - CUSTOMER
 
-    UserIdPath:
-      name: userId
+    ProductIdPath:
+      name: productId
       in: path
       required: true
       schema:
@@ -103,3 +195,28 @@ components:
         page:
           $ref: '#/components/schemas/ResponsePage'
 
+    PagedInventoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/PagedResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Inventory'
+
+    Inventory:
+      type: object
+      properties:
+        productId:
+          type: string
+        stock:
+          type: integer
+          format: int64
+
+    UpdateInventoryReq:
+      type: object
+      properties:
+        stock:
+          type: integer
+          format: int64
