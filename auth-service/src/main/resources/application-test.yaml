@@ -1,0 +1,16 @@
+spring:
+
+  flyway:
+    locations: classpath:db/migration,classpath:db/testdata
+    clean-disabled: false
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type.descriptor.sql.BasicBinder: TRACE
+      flywaydb: DEBUG
+
+jwt:
+  secret: eAsbfHQfTH0Qd5YLW3irVLicbxFfrz4kHWk82OATZA5

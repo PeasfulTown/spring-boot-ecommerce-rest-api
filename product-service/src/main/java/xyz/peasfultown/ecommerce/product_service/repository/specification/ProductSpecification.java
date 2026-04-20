@@ -8,8 +8,14 @@ import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 public class ProductSpecification {
+    public static Specification<ProductEntity> hasIdsIn(List<UUID> productIds) {
+        return (root, query, cb) ->
+        productIds == null ? null : root.get("id").in(productIds);
+    }
+
     public static Specification<ProductEntity> hasName(String name) {
         return (root, query, cb) ->
         name == null ? null : cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");

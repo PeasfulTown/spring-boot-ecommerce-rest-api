@@ -1,0 +1,356 @@
+openapi: 3.0.1
+info:
+  title: E-Commerce Order Service
+  description: |
+    Handles the user order management part of the e-commerce microservices platform
+  contact:
+    email: emrin4@gmail.com
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  version: 0.0.1
+
+tags:
+  - name: order
+    description: User order management
+
+paths:
+  /api/v1/orders:
+    get:
+      tags: [ order ]
+      summary: Get all of a user's orders
+      operationId: getMyOrders
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/OrderStatusQuery'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedOrderResponse'
+
+  /api/v1/orders/{orderId}:
+    get:
+      tags: [ order ]
+      summary: Get order by ID
+      operationId: getMyOrderById
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/OrderIdPath'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found by ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/orders/all:
+    get:
+      tags: [ order ]
+      summary: Get orders access all users (admin)
+      operationId: getAllUsersOrders
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedOrderResponse'
+
+        '403':
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/orders/user/{userId}:
+    get:
+      tags: [ order ]
+      summary: Get orders by user ID (admin)
+      operationId: getOrdersByUserId
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '200':
+          description: Successful fetch
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+
+  /api/v1/orders/{orderId}/status:
+    patch:
+      tags: [ order ]
+      summary: Update order status (admin)
+      operationId: updateOrderStatus
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/OrderIdPath'
+      requestBody:
+        description: New order status
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderStatusReq'
+      responses:
+        '204':
+          description: Successful update
+          content: {}
+
+  /api/v1/orders/status/{status}:
+    get:
+      tags: [ order ]
+      summary: Get orders by status
+      operationId: getOrdersByStatus
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/OrderStatusPath'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Successful read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedOrderResponse'
+        '403':
+          description: User not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+
+  parameters:
+
+    UserIdHeader:
+      name: X-User-Id
+      in: header
+      required: true
+      schema:
+        type: string
+
+    UserRoleHeader:
+      name: X-User-Role
+      in: header
+      required: true
+      schema:
+        type: string
+        enum:
+          - ADMIN
+          - CUSTOMER
+
+    UserIdPath:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    OrderIdPath:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    OrderStatusPath:
+      name: status
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - PROCESSING
+          - SHIPPED
+          - OUT_FOR_DELIVERY
+          - COMPLETED
+          - CANCELLED
+
+    OrderStatusQuery:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum:
+          - PROCESSING
+          - SHIPPED
+          - OUT_FOR_DELIVERY
+          - COMPLETED
+          - CANCELLED
+
+    PageNumber:
+      name: page
+      in: query
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    PageSize:
+      name: size
+      in: query
+      schema:
+        type: integer
+        format: int32
+        default: 10
+
+  schemas:
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [ status, message ]
+
+    OrderStatus:
+      type: string
+      enum:
+        - PROCESSING
+        - SHIPPED
+        - OUT_FOR_DELIVERY
+        - COMPLETED
+        - CANCELLED
+
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        productName:
+          type: string
+        productPrice:
+          type: BigDecimal
+        quantity:
+          type: integer
+          format: int32
+        subtotal:
+          type: BigDecimal
+
+    CartCheckoutReq:
+      type: object
+      required: [ userId, addressId, cardId, cartItems ]
+      properties:
+        userId:
+          type: string
+        addressId:
+          type: string
+        cardId:
+          type: string
+        cartItems:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/CartItem'
+
+    ResponsePage:
+      type: object
+      properties:
+        number:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+
+    PagedResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items: {}
+        page:
+          $ref: '#/components/schemas/ResponsePage'
+
+    PagedOrderResponse:
+      allOf:
+        - $ref: '#/components/schemas/PagedResponse'
+        - type: object
+          properties:
+            content:
+              type: array
+              items:
+                $ref: '#/components/schemas/Order'
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          format: phone
+        number:
+          type: string
+          description: Street number
+        street:
+          type: string
+          description: Street name
+        city:
+          type: string
+        state:
+          type: string
+        country:
+          type: string
+        postalCode:
+          type: string
+        totalPrice:
+          type: BigDecimal
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+
+    UpdateOrderStatusReq:
+      type: object
+      required: [ orderStatus ]
+      properties:
+        orderStatus:
+          $ref: '#/components/schemas/OrderStatus'

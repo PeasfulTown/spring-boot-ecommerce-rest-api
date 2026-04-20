@@ -108,6 +108,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
 
+  /api/v1/products/batch:
+    post:
+      tags: [ product ]
+      summary: Get products
+      operationId: getProducts
+      requestBody:
+        description: Optional array of product IDs, if not present will 
+          return all
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProductId'
+      responses:
+        '200':
+          description: Successful query
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+
+
   /api/v1/products/{id}:
     get:
       tags: [ product ]
@@ -128,7 +153,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          description: Product not found by ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
     patch:
       tags: [ product ]
@@ -385,6 +414,12 @@ components:
           type: string
       xml:
         name: Category
+
+    ProductId:
+      type: object
+      properties:
+        id:
+          type: string
 
     Product:
       type: object

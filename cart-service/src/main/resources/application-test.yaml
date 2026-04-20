@@ -1,0 +1,5 @@
+services:
+  product-service:
+    url: ${product-service.url}
+  user-service:
+    url: ${user-service.url}

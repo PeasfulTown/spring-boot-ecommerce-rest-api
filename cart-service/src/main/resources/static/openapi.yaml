@@ -1,0 +1,264 @@
+openapi: 3.0.1
+info:
+  title: E-Commerce Cart Service
+  description: |
+    Handles the user cart management part of the e-commerce microservices platform
+  contact:
+    email: emrin4@gmail.com
+  license:
+    name: MIT
+    url: https://mit-license.org/
+  version: 0.0.1
+
+tags:
+  - name: cart
+    description: User cart management
+
+paths:
+  /api/v1/cart:
+    get:
+      tags: [ cart ]
+      summary: Get user's cart
+      operationId: getMyCart
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '200':
+          description: Successfully read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+
+    delete:
+      tags: [ cart ]
+      summary: Clear user's cart
+      operationId: clearMyCart
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '204':
+          description: Successful clear
+          content: {}
+
+  /api/v1/cart/checkout:
+    post:
+      tags: [ cart ]
+      summary: Send cart as order
+      operationId: submitOrder
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      requestBody:
+        description: Cart information and user information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartCheckoutReq'
+      responses:
+        '202':
+          description: Sent to messaging queue to process order
+          content: {}
+
+
+  /api/v1/cart/items:
+    post:
+      tags: [ cart ]
+      summary: Add item to cart
+      operationId: addItemToCart
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+      requestBody:
+        description: Request body with product ID and quantity to add to cart
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddItemReq'
+      responses:
+        '200':
+          description: Item added to cart successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+
+  /api/v1/cart/items/{id}:
+    patch:
+      tags: [ cart ]
+      summary: Update item's quantity in cart
+      operationId: updateItemQuantity
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Request body with product ID and new quantity
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItemQuantityReq'
+      responses:
+        '200':
+          description: Update successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItem'
+
+    delete:
+      tags: [ cart ]
+      summary: Remove item from user's cart
+      operationId: deleteItemFromCart
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Item removal successful
+          content: {}
+
+components:
+
+  parameters:
+    UserIdHeader:
+      name: X-User-Id
+      in: header
+      required: true
+      schema:
+        type: string
+    UserRoleHeader:
+      name: X-User-Role
+      in: header
+      required: true
+      schema:
+        type: string
+        enum:
+          - ADMIN
+          - CUSTOMER
+
+  schemas:
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required: [ status, message ]
+
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        totalItems:
+          type: integer
+          format: int32
+        totalPrice:
+          type: BigDecimal
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        productName:
+          type: string
+        productPrice:
+          type: BigDecimal
+        quantity:
+          type: integer
+          format: int32
+        subtotal:
+          type: BigDecimal
+
+    ProductStockStatus:
+      type: string
+      enum:
+        - IN_STOCK
+        - OUT_OF_STOCK
+        - LOW_STOCK
+
+    ProductActiveStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    ProductId:
+      type: object
+      properties:
+        id:
+          type: string
+
+    Product:
+      type: object
+      description: The product object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: BigDecimal
+        imageUrls:
+          type: array
+          items:
+            type: string
+        stockStatus:
+          $ref: '#/components/schemas/ProductStockStatus'
+        activeStatus:
+          $ref: '#/components/schemas/ProductActiveStatus'
+      xml:
+        name: Product
+
+    AddItemReq:
+      type: object
+      required: [ productId, quantity ]
+      properties:
+        productId:
+          type: string
+        quantity:
+          type: integer
+          format: int32
+
+    UpdateItemQuantityReq:
+      type: object
+      required: [ quantity ]
+      properties:
+        quantity:
+          type: integer
+          format: int32
+
+    CartCheckoutReq:
+      type: object
+      required: [ addressId, cardId ]
+      properties:
+        addressId:
+          type: string
+        cardId:
+          type: string

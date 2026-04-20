@@ -1,0 +1,22 @@
+spring:
+  profiles.active: ${ACTIVE_PROFILE}
+  application:
+    name: AuthService
+  datasource:
+    url: ${DB_URL}
+    name: ${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+
+server.port: 8080
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiry:
+    accessToken: 900000
+    refreshToken: 604800000

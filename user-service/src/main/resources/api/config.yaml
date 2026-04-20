@@ -1,0 +1,15 @@
+library: "spring-boot"
+modelPackage: "xyz.peasfultown.ecommerce.user_api.model"
+apiPackage: "xyz.peasfultown.ecommerce.user_api"
+invokerPackage: "xyz.peasfultown.ecommerce.user_api"
+dateLibrary: "java8"
+unhandledException: true
+sourceFolder: "src/main/java"
+resourceFolder: "src/main/resources"
+useBeanValidation: true
+useJakartaEe: true
+useSpringBoot3: true
+useTags: true
+generateBuilders: true
+serializableModel: true
+useSwaggerUI: true
