@@ -50,7 +50,7 @@ paths:
 
 
 
-    put:
+    patch:
       tags: [ inventory ]
       summary: Update product stock (admin)
       operationId: updateProductInventoryById
@@ -212,11 +212,9 @@ components:
           type: string
         stock:
           type: integer
-          format: int64
 
     UpdateInventoryReq:
       type: object
       properties:
         stock:
           type: integer
-          format: int64
