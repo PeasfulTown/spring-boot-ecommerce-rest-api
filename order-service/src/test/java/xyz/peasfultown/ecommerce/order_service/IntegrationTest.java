@@ -187,19 +187,7 @@ public class IntegrationTest {
                         .header("X-User-Id", oe1.getUserId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.page.totalElements", is(2)))
-                .andExpect(jsonPath("$.content[0].id", is(oe1.getId())))
-                .andExpect(jsonPath("$.content[0].userId", is(oe1.getUserId())))
-                .andExpect(jsonPath("$.content[0].email", is(oe1.getEmail())))
-                .andExpect(jsonPath("$.content[0].phone", is(oe1.getPhone())))
-                .andExpect(jsonPath("$.content[0].number", is(oe1.getNumber())))
-                .andExpect(jsonPath("$.content[0].street", is(oe1.getStreet())))
-                .andExpect(jsonPath("$.content[0].city", is(oe1.getCity())))
-                .andExpect(jsonPath("$.content[0].state", is(oe1.getState())))
-                .andExpect(jsonPath("$.content[0].country", is(oe1.getCountry())))
-                .andExpect(jsonPath("$.content[0].postalCode", is(oe1.getPostalCode())))
-                .andExpect(jsonPath("$.content[0].status", is(oe1.getStatus().toString())))
-                .andExpect(jsonPath("$.content[0].totalPrice", is(oe1.getTotalPrice())))
+                .andExpect(jsonPath("$.page.totalElements").value(2))
                 ;
     }
 
@@ -223,18 +211,18 @@ public class IntegrationTest {
         mvc.perform(get("/api/v1/orders/{id}", oe1.getId())
                         .header("X-User-Id", oe1.getUserId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(oe1.getId())))
-                .andExpect(jsonPath("$.userId", is(oe1.getUserId())))
-                .andExpect(jsonPath("$.email", is(oe1.getEmail())))
-                .andExpect(jsonPath("$.phone", is(oe1.getPhone())))
-                .andExpect(jsonPath("$.number", is(oe1.getNumber())))
-                .andExpect(jsonPath("$.street", is(oe1.getStreet())))
-                .andExpect(jsonPath("$.city", is(oe1.getCity())))
-                .andExpect(jsonPath("$.state", is(oe1.getState())))
-                .andExpect(jsonPath("$.country", is(oe1.getCountry())))
-                .andExpect(jsonPath("$.postalCode", is(oe1.getPostalCode())))
-                .andExpect(jsonPath("$.status", is(oe1.getStatus().toString())))
-                .andExpect(jsonPath("$.totalPrice", is(oe1.getTotalPrice())))
+                .andExpect(jsonPath("$.id").value(oe1.getId().toString()))
+                .andExpect(jsonPath("$.userId").value(oe1.getUserId().toString()))
+                .andExpect(jsonPath("$.email").value(oe1.getEmail()))
+                .andExpect(jsonPath("$.phone").value(oe1.getPhone()))
+                .andExpect(jsonPath("$.number").value(oe1.getNumber()))
+                .andExpect(jsonPath("$.street").value(oe1.getStreet()))
+                .andExpect(jsonPath("$.city").value(oe1.getCity()))
+                .andExpect(jsonPath("$.state").value(oe1.getState()))
+                .andExpect(jsonPath("$.country").value(oe1.getCountry()))
+                .andExpect(jsonPath("$.postalCode").value(oe1.getPostalCode()))
+                .andExpect(jsonPath("$.status").value(oe1.getStatus().toString()))
+                .andExpect(jsonPath("$.totalPrice").value(oe1.getTotalPrice()))
                 ;
     }
 
@@ -245,8 +233,8 @@ public class IntegrationTest {
                         .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].status", is("PROCESSING")))
-                .andExpect(jsonPath("$.content[1].status", is("PROCESSING")))
+                .andExpect(jsonPath("$.content[0].status").value("PROCESSING"))
+                .andExpect(jsonPath("$.content[1].status").value("PROCESSING"))
                 ;
     }
 

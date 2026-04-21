@@ -56,7 +56,6 @@ public class RabbitMqConfig {
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory(this.host);
-        connectionFactory.setVirtualHost("/");
         connectionFactory.setPort(this.port);
         connectionFactory.setUsername(this.username);
         connectionFactory.setPassword(this.password);
