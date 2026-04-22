@@ -3,6 +3,7 @@ package xyz.peasfultown.ecommerce.inventory_service;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -23,7 +24,7 @@ class TestcontainersConfiguration {
 	}
 
 	@Bean
-	DynamicPropertyRegistrar propertyRegistrar(MySQLContainer<?> mysqlContainer) {
+	DynamicPropertyRegistrar propertyRegistrarMysql(MySQLContainer<?> mysqlContainer) {
 		return registry -> {
 			registry.add("spring.datasource.url", mysqlContainer::getJdbcUrl);
 			registry.add("spring.datasource.username", mysqlContainer::getUsername);
@@ -31,10 +32,25 @@ class TestcontainersConfiguration {
 		};
 	}
 
-//	@Bean
-//	@ServiceConnection
-//	RabbitMQContainer rabbitContainer() {
-//		return new RabbitMQContainer(DockerImageName.parse("rabbitmq:latest"));
-//	}
 
+	@Profile( { "test", "rabbitmq"} )
+	@Bean
+	@ServiceConnection
+	RabbitMQContainer rabbitContainer() {
+		RabbitMQContainer rabbitMQContainer = new RabbitMQContainer("rabbitmq:4-management");
+		rabbitMQContainer.withAdminUser("testuser");
+		rabbitMQContainer.withAdminPassword("testpassword");
+		return rabbitMQContainer;
+	}
+
+	@Profile( { "test", "rabbitmq"} )
+	@Bean
+	DynamicPropertyRegistrar propertyRegistrarRabbitMq(RabbitMQContainer rabbitMQContainer) {
+		return registry -> {
+			registry.add("spring.rabbitmq.host", rabbitMQContainer::getHost);
+			registry.add("spring.rabbitmq.port", rabbitMQContainer::getAmqpPort);
+			registry.add("spring.rabbitmq.username", rabbitMQContainer::getAdminUsername);
+			registry.add("spring.rabbitmq.password", rabbitMQContainer::getAdminPassword);
+		};
+	}
 }

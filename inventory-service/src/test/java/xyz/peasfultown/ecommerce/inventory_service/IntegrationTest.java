@@ -60,7 +60,7 @@ public class IntegrationTest {
     void getProductInventoryByProductId_returns200() throws Exception {
         mvc.perform(get("/api/v1/inventory/{id}", "22222222-2222-2222-2222-222222222220"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.stock", is(50)));
+                .andExpect(jsonPath("$.stock").value(50));
     }
 
     @Test
@@ -71,10 +71,6 @@ public class IntegrationTest {
                 .getResponse()
                 .getContentAsString()
                 ;
-
-        // TODO: remove
-        ProblemDetail details = oMapper.readValue(json, ProblemDetail.class);
-        log.info("Problem Detail: {}", details);
     }
 
     @Test

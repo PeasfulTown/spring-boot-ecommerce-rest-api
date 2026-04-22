@@ -28,6 +28,6 @@ public class InventoryEntity {
     private UUID productId;
 
     @Builder.Default
-    @Column(name = "stock", nullable = false, updatable = false)
+    @Column(name = "stock", nullable = false)
     private int stock = 0;
 }

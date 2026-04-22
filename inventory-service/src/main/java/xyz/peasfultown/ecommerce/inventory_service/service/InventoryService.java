@@ -3,6 +3,7 @@ package xyz.peasfultown.ecommerce.inventory_service.service;
 import org.springframework.data.domain.Page;
 import xyz.peasfultown.ecommerce.inventory_api.model.Inventory;
 import xyz.peasfultown.ecommerce.inventory_api.model.UpdateInventoryReq;
+import xyz.peasfultown.ecommerce.inventory_service.dto.UpdateInventoryStockMessage;
 
 public interface InventoryService {
     Page<Inventory> getAllProductInventory(Integer page, Integer size);
@@ -14,4 +15,6 @@ public interface InventoryService {
     Page<Inventory> getLowStockProducts(Integer page, Integer size);
 
     Page<Inventory> getOutOfStockProducts(Integer page, Integer size);
+
+    void updateProductsStocks(UpdateInventoryStockMessage message);
 }

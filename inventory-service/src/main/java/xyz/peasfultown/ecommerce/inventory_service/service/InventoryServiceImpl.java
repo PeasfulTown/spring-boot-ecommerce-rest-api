@@ -1,27 +1,31 @@
 package xyz.peasfultown.ecommerce.inventory_service.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.inventory_api.model.Inventory;
 import xyz.peasfultown.ecommerce.inventory_api.model.UpdateInventoryReq;
-import xyz.peasfultown.ecommerce.inventory_service.dto.OrderSubmission;
+import xyz.peasfultown.ecommerce.inventory_service.dto.StockStatus;
+import xyz.peasfultown.ecommerce.inventory_service.dto.UpdateInventoryStockMessage;
 import xyz.peasfultown.ecommerce.inventory_service.entity.InventoryEntity;
 import xyz.peasfultown.ecommerce.inventory_service.exception.ProductInventoryNotFoundException;
 import xyz.peasfultown.ecommerce.inventory_service.mapper.InventoryMapper;
 import xyz.peasfultown.ecommerce.inventory_service.repository.InventoryRepository;
 import xyz.peasfultown.ecommerce.inventory_service.repository.InventorySpecification;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
 @Service
+@Transactional
 public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository repo;
     private final InventoryMapper mapper;
@@ -76,11 +80,27 @@ public class InventoryServiceImpl implements InventoryService {
         return invEntities.map(mapper::toModel);
     }
 
-    @RabbitListener(
-            queues = { "#{ordersSubmitted_queue.getName}" },
-            messageConverter = "jsonConverter"
-    )
-    public void handleOrderSubmitted(OrderSubmission orderSubmission) {
+    @Override
+    public void updateProductsStocks(UpdateInventoryStockMessage message) {
+        List<InventoryEntity> ies = repo.findInventoriesByProductIds(
+                message.getItems().keySet().stream().map(UUID::fromString).toList());
 
+        Map<String, StockStatus> stockStatuses = new HashMap<>();
+
+        if (ies.size() != message.getItems().size())
+            throw new RuntimeException("Found inventory list size and message item list size mismatch!");
+        ies.forEach(ie -> {
+            int quantity = message.getItems().get(ie.getProductId().toString());
+            ie.setStock(ie.getStock() - quantity);
+        });
+        repo.saveAll(ies);
+    }
+
+    private StockStatus determineStockStatus(int stock) {
+        if (stock == 0)
+            return StockStatus.OUT_OF_STOCK;
+        else if (stock <= 15)
+            return StockStatus.LOW_STOCK;
+        return StockStatus.IN_STOCK;
     }
 }

@@ -11,3 +11,5 @@ logging:
         SQL: DEBUG
         type.descriptor.sql.BasicBinder: TRACE
       flywaydb: DEBUG
+      springframework:
+        amqp: DEBUG

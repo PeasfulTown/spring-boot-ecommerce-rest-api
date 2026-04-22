@@ -15,4 +15,9 @@ public interface InventoryRepository extends JpaRepository<InventoryEntity, UUID
             SELECT i FROM InventoryEntity i WHERE i.productId = :productId
             """)
     Optional<InventoryEntity> findInventoryByProductId(UUID productId);
+
+    @Query("""
+            SELECT i FROM InventoryEntity i WHERE i.productId IN (:productIds)
+            """)
+    List<InventoryEntity> findInventoriesByProductIds(List<UUID> productIds);
 }
