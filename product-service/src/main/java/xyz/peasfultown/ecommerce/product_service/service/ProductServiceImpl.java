@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.product_api.model.*;
+import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
 import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 import xyz.peasfultown.ecommerce.product_service.exception.CategoryNotFoundException;
@@ -141,6 +142,7 @@ public class ProductServiceImpl implements ProductService {
         repo.deleteById(UUID.fromString(id));
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Product getProductById(String id) {
         ProductEntity pe = repo.findById(UUID.fromString(id))
@@ -149,5 +151,16 @@ public class ProductServiceImpl implements ProductService {
                 )));
 
         return mapper.toModel(pe);
+    }
+
+    @Override
+    public void updateProductStock(ProductStockUpdateMessageDto dto) {
+        List<ProductEntity> pes = repo.findAllById(
+        dto.getContent().keySet().stream().map(UUID::fromString).toList());
+        assert pes.size() == dto.getContent().size();
+        pes.forEach(p -> {
+            p.setStock(p.getStock() - dto.getContent().get(p.getId().toString()));
+        });
+        repo.saveAll(pes);
     }
 }

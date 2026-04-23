@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -99,10 +100,12 @@ public class RabbitMqTest {
         Map<String, Integer> map = new HashMap<>();
         map.put(p1.getId().toString(), 10);
         map.put(p2.getId().toString(), 5);
-        ProductStockUpdateMessageDto dto = new ProductStockUpdateMessageDto(map);
+        ProductStockUpdateMessageDto dto = ProductStockUpdateMessageDto.builder()
+                .content(map).build();
 
-        Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(map))
+        Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(dto))
                         .setHeader(RabbitMqConstants.TYPEID_HEADER, "ProductStockUpdateMessageDto")
+                        .setContentType(MessageProperties.CONTENT_TYPE_JSON)
                                 .build();
 
         rabbitTemplate.send(RabbitMqConstants.cart_checkout_product_updateStock_routingKey, message);

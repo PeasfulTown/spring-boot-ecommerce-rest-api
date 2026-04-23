@@ -2,6 +2,7 @@ package xyz.peasfultown.ecommerce.product_service.service;
 
 import org.springframework.data.domain.Page;
 import xyz.peasfultown.ecommerce.product_api.model.*;
+import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,4 +27,6 @@ public interface ProductService {
     List<Product> getProducts(BatchProductIdRequest request);
 
     Product updateProductById(String productId, ProductUpdateRequest productUpdateRequest);
+
+    void updateProductStock(ProductStockUpdateMessageDto dto);
 }

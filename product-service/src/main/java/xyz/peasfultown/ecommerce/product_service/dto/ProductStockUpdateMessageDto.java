@@ -1,9 +1,6 @@
 package xyz.peasfultown.ecommerce.product_service.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Map;
 
@@ -11,6 +8,7 @@ import java.util.Map;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ProductStockUpdateMessageDto {
     Map<String, Integer> content;
 }
