@@ -1,5 +1,6 @@
 package xyz.peasfultown.ecommerce.order_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -34,11 +35,11 @@ public class OrderEntity {
     @Column(name = "phone", nullable = false)
     private String phone;
 
-    @Column(name = "number", nullable = false)
-    private String number;
+    @Column(name = "street_number", nullable = false)
+    private String streetNumber;
 
-    @Column(name = "street", nullable = false)
-    private String street;
+    @Column(name = "street_name", nullable = false)
+    private String streetName;
 
     @Column(name = "city", nullable = false)
     private String city;
@@ -68,6 +69,36 @@ public class OrderEntity {
     private List<OrderItemEntity> items = new ArrayList<>();
 
     public enum OrderStatus {
-        PROCESSING, SHIPPED, OUT_FOR_DELIVERY, COMPLETED, CANCELLED;
+        PROCESSING("PROCESSING"),
+        CONFIRMED("CONFIRMED"),
+        SHIPPED("SHIPPED"),
+        OUT_FOR_DELIVERY("OUT_FOR_DELIVERY"),
+        COMPLETED("COMPLETED"),
+        CANCELLED("CANCELLED");
+
+        private final String value;
+        OrderStatus(String value) {
+            this.value = value;
+        }
+
+        @JsonValue
+        public String getValue() {
+            return value;
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(value);
+        }
+
+        public static OrderStatus fromValue(String in) {
+            for (OrderStatus s : OrderStatus.values())
+                if (in.equalsIgnoreCase(s.getValue()))
+                    return s;
+
+            throw new IllegalArgumentException(String.format(
+                    "Unknown OrderStatus value: %s", in
+            ));
+        }
     }
 }

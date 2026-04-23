@@ -99,8 +99,8 @@ public class MessageConsumerTest {
         assertEquals(messageBody.getUserId(), oe.getUserId().toString());
         assertEquals(messageBody.getEmail(), oe.getEmail());
         assertEquals(messageBody.getPhone(), oe.getPhone());
-        assertEquals(messageBody.getStreetNumber(), oe.getNumber());
-        assertEquals(messageBody.getStreetName(), oe.getStreet());
+        assertEquals(messageBody.getStreetNumber(), oe.getStreetNumber());
+        assertEquals(messageBody.getStreetName(), oe.getStreetName());
         assertEquals(messageBody.getCity(), oe.getCity());
         assertEquals(messageBody.getState(), oe.getState());
         assertEquals(messageBody.getCountry(), oe.getCountry());
