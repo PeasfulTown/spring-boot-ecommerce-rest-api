@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.product_service.config.RabbitMqConstants;
 import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
@@ -36,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 @ActiveProfiles({ "test", "rabbitmq" })
 @Slf4j
-public class RabbitMqTest {
+public class MessageConsumerTest {
     @Autowired
     private ProductRepository prodRepo;
 
@@ -124,9 +123,16 @@ public class RabbitMqTest {
         Map<UUID, ProductEntity> actual = prodRepo.findAllById(List.of(p1.getId(), p2.getId()))
                 .stream().collect(Collectors.toMap(ProductEntity::getId, Function.identity()));
         for (Map.Entry<String, Integer> e : map.entrySet()) {
+            ProductEntity pe = actual.get(UUID.fromString(e.getKey()));
             assertEquals(e.getValue(),
             orig.get(UUID.fromString(e.getKey())).getStock()
-            - actual.get(UUID.fromString(e.getKey())).getStock());
+            - pe.getStock());
+            if (pe.getStock() == 0)
+                assertEquals(ProductEntity.StockStatus.OUT_OF_STOCK, pe.calculateStockStatus());
+            else if (pe.getStock() <= 20)
+                assertEquals(ProductEntity.StockStatus.LOW_STOCK, pe.calculateStockStatus());
+            else
+                assertEquals(ProductEntity.StockStatus.IN_STOCK, pe.calculateStockStatus());
         }
     }
 }

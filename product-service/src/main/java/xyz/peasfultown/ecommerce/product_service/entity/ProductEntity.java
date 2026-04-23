@@ -2,7 +2,6 @@ package xyz.peasfultown.ecommerce.product_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -51,7 +50,6 @@ public class ProductEntity {
     @Column(name = "stock", nullable = false)
     private int stock = 0;
 
-    @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     @Column(name = "stock_status", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -69,7 +67,7 @@ public class ProductEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
-    public StockStatus getStockStatus() {
+    public StockStatus calculateStockStatus() {
         if (stock == 0)
             return StockStatus.OUT_OF_STOCK;
         else if (stock <= 20)
@@ -79,7 +77,7 @@ public class ProductEntity {
     }
 
     public void setStockStatus() {
-        this.stockStatus = getStockStatus();
+        this.stockStatus = calculateStockStatus();
     }
 
     public enum ActiveStatus {
