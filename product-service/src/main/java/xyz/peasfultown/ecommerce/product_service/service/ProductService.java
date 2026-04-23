@@ -1,11 +1,8 @@
 package xyz.peasfultown.ecommerce.product_service.service;
 
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
-import xyz.peasfultown.ecommerce.product_api.model.NewProductReq;
-import xyz.peasfultown.ecommerce.product_api.model.Product;
-import xyz.peasfultown.ecommerce.product_api.model.ProductId;
-import xyz.peasfultown.ecommerce.product_api.model.ProductStockStatus;
+import xyz.peasfultown.ecommerce.product_api.model.*;
+import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,17 +12,21 @@ public interface ProductService {
                                 String category,
                                 BigDecimal minPrice,
                                 BigDecimal maxPrice,
-                                List<ProductStockStatus> stockStatus,
+                                List<StockStatus> stockStatus,
                                 String sortBy,
                                 String sortDir,
                                 Integer page,
                                 Integer size);
 
-    Product createProduct(NewProductReq newProductReq);
+    Product createProduct(ProductCreateRequest newProductReq);
 
     void deleteProductById(String id);
 
     Product getProductById(String id);
 
-    List<Product> getProducts(List<@Valid ProductId> productId);
+    List<Product> getProducts(BatchProductIdRequest request);
+
+    Product updateProductById(String productId, ProductUpdateRequest productUpdateRequest);
+
+    void updateProductStock(ProductStockUpdateMessageDto dto);
 }

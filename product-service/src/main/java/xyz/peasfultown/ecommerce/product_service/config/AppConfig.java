@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Profile;
 public class AppConfig {
 
     @Bean
-    @Profile("local")
+    @Profile("test")
     public FlywayMigrationStrategy cleanMigrationStrategy() {
         return flyway -> {
             flyway.clean();

@@ -18,7 +18,7 @@ paths:
   /api/v1/orders:
     get:
       tags: [ order ]
-      summary: Get all of a user's orders
+      summary: Get all a user's order, paged
       operationId: getMyOrders
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
@@ -27,11 +27,7 @@ paths:
         - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PagedOrderResponse'
+          $ref: '#/components/responses/PagedOrder'
 
   /api/v1/orders/{orderId}:
     get:
@@ -43,22 +39,14 @@ paths:
         - $ref: '#/components/parameters/OrderIdPath'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
+          $ref: '#/components/responses/SingleOrder'
         '404':
-          description: Order not found by ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
   /api/v1/orders/all:
     get:
       tags: [ order ]
-      summary: Get orders access all users (admin)
+      summary: Get paged orders access all users (admin)
       operationId: getAllUsersOrders
       parameters:
         - $ref: '#/components/parameters/UserRoleHeader'
@@ -66,18 +54,10 @@ paths:
         - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PagedOrderResponse'
+          $ref: '#/components/responses/PagedOrder'
 
         '403':
-          description: Access denied
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
   /api/v1/orders/user/{userId}:
     get:
@@ -89,13 +69,7 @@ paths:
         - $ref: '#/components/parameters/UserIdPath'
       responses:
         '200':
-          description: Successful fetch
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Order'
+          $ref: '#/components/responses/BatchOrder'
 
   /api/v1/orders/{orderId}/status:
     patch:
@@ -128,17 +102,9 @@ paths:
         - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PagedOrderResponse'
+          $ref: '#/components/responses/PagedOrder'
         '403':
-          description: User not authorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
 components:
 
@@ -216,9 +182,42 @@ components:
         format: int32
         default: 10
 
+  responses:
+
+    Error:
+      description: Error response with details
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDetail'
+
+    PagedOrder:
+      description: Paged order response object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PagedOrderResponse'
+
+    SingleOrder:
+      description: Single order object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Order'
+
+    BatchOrder:
+      description: Array of order objects
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Order'
+
+
   schemas:
 
-    ErrorResponse:
+    ErrorDetail:
       type: object
       properties:
         status:
@@ -233,49 +232,6 @@ components:
           type: string
           format: date-time
       required: [ status, message ]
-
-    OrderStatus:
-      type: string
-      enum:
-        - PROCESSING
-        - SHIPPED
-        - OUT_FOR_DELIVERY
-        - COMPLETED
-        - CANCELLED
-
-
-    CartItem:
-      type: object
-      properties:
-        id:
-          type: string
-        productId:
-          type: string
-        productName:
-          type: string
-        productPrice:
-          type: BigDecimal
-        quantity:
-          type: integer
-          format: int32
-        subtotal:
-          type: BigDecimal
-
-    CartCheckoutReq:
-      type: object
-      required: [ userId, addressId, cardId, cartItems ]
-      properties:
-        userId:
-          type: string
-        addressId:
-          type: string
-        cardId:
-          type: string
-        cartItems:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/CartItem'
 
     ResponsePage:
       type: object
@@ -325,12 +281,10 @@ components:
         phone:
           type: string
           format: phone
-        number:
+        streetNumber:
           type: string
-          description: Street number
-        street:
+        streetName:
           type: string
-          description: Street name
         city:
           type: string
         state:
@@ -341,12 +295,42 @@ components:
           type: string
         totalPrice:
           type: BigDecimal
+        itemCount:
+          type: integer
+          format: int32
         status:
           $ref: '#/components/schemas/OrderStatus'
         items:
           type: array
           items:
-            $ref: '#/components/schemas/CartItem'
+            $ref: '#/components/schemas/OrderItem'
+
+    OrderStatus:
+      type: string
+      enum:
+        - PROCESSING
+        - CONFIRMED
+        - SHIPPED
+        - OUT_FOR_DELIVERY
+        - COMPLETED
+        - CANCELLED
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        productName:
+          type: string
+        productPrice:
+          type: BigDecimal
+        quantity:
+          type: integer
+          format: int32
+        subtotal:
+          type: BigDecimal
 
     UpdateOrderStatusReq:
       type: object
@@ -354,3 +338,19 @@ components:
       properties:
         orderStatus:
           $ref: '#/components/schemas/OrderStatus'
+
+    CartCheckoutRequest:
+      type: object
+      required: [ userId, addressId, cardId, orderItems ]
+      properties:
+        userId:
+          type: string
+        addressId:
+          type: string
+        cardId:
+          type: string
+        orderItems:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItem'

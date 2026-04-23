@@ -8,27 +8,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Mapper(componentModel = "spring")
-public abstract class CategoryMapper {
-    public Category entityToModel(CategoryEntity entity) {
-        return new Category()
-                .id(entity.getId().toString())
-                .name(entity.getName())
-                .description(entity.getDescription());
-    }
+public interface CategoryMapper {
+    Category toModel(CategoryEntity entity);
+    CategoryEntity toEntity(Category model);
 
-    public CategoryEntity modelToEntity(Category model) {
-        return CategoryEntity.builder()
-                .id(model.getId() != null ? UUID.fromString(model.getId()) : null)
-                .name(model.getName())
-                .description(model.getDescription())
-                .build();
-    }
-
-    public List<CategoryEntity> modelListToEntityList(List<Category> cl) {
-        return cl.stream().map(this::modelToEntity).toList();
-    }
-
-    public List<Category> entityListToModelList(List<CategoryEntity> cl) {
-        return cl.stream().map(this::entityToModel).toList();
-    }
+    List<Category> toModel(List<CategoryEntity> entities);
+    List<CategoryEntity> toEntity(List<Category> models);
 }

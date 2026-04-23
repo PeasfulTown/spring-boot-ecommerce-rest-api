@@ -62,12 +62,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @EnableWireMock({
         @ConfigureWireMock(
                 name = "product-service",
-                baseUrlProperties = "product-service.url",
+                baseUrlProperties = "PRODUCT_SERVICE_URL",
                 portProperties = "product-service.port"
         ),
         @ConfigureWireMock(
                 name = "user-service",
-                baseUrlProperties = "user-service.url",
+                baseUrlProperties = "USER_SERVICE_URL",
                 portProperties = "user-service.port"
         )
 })
@@ -274,8 +274,6 @@ public class IntegrationTest {
         ce2.setTotalItems(2);
         ce2.setTotalPrice(BigDecimal.valueOf(333.33));
         cartRepo.save(ce2);
-
-
     }
 
     @AfterEach
@@ -647,7 +645,6 @@ public class IntegrationTest {
         assertEquals(expected.getOrderTotal(), result.getOrderTotal());
         assertEquals(expected.getOrderItemCount(), result.getOrderItemCount());
         assertEquals(expected.getItems(), result.getItems());
-
     }
 
     @Test

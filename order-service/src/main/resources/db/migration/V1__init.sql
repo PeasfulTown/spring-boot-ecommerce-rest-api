@@ -3,15 +3,16 @@ create table if not exists `order` (
     user_id varchar(36) not null,
     email varchar(50) not null,
     phone varchar(10) not null,
-    number varchar(10) not null,
-    street varchar(50) not null,
+    street_number varchar(10) not null,
+    street_name varchar(50) not null,
     city varchar(50) not null,
     state varchar(50) not null,
     country varchar(50) not null,
     postal_code varchar(50) not null,
     total_price decimal(10, 2) not null,
     item_count int unsigned not null,
-    status enum("PROCESSING", "SHIPPED", "OUT_FOR_DELIVERY", "COMPLETED", "CANCELLED") not null,
+    status enum("PROCESSING", "CONFIRMED", "SHIPPED",
+    "OUT_FOR_DELIVERY", "COMPLETED", "CANCELLED") not null,
     primary key (id)
 );
 

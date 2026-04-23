@@ -1,6 +1,5 @@
-package xyz.peasfultown.ecommerce.order_service.config;
+package xyz.peasfultown.ecommerce.product_service.config;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
@@ -14,12 +13,11 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
+import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Slf4j
 @Configuration
 public class RabbitMqConfig {
     @Value("${spring.rabbitmq.username}")
@@ -43,32 +41,32 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Queue order_createOrder_queue() {
-        return new Queue(RabbitMqConstants.order_createOrder_queue);
+    public Queue product_updateStock_queue() {
+        return new Queue(RabbitMqConstants.product_updateStock_queue);
     }
 
     @Bean
-    public Binding cart_checkout_order_createOrder_routingKey(Queue order_createOrder_queue,
-                                                              TopicExchange exchange) {
-        return BindingBuilder.bind(order_createOrder_queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_createOrder_routingKey);
+    public Binding product_updateStock_binding(TopicExchange exchange, Queue product_updateStock_queue) {
+        return BindingBuilder.bind(product_updateStock_queue)
+        .to(exchange)
+        .with(RabbitMqConstants.cart_checkout_product_updateStock_routingKey);
     }
 
     @Bean
     public Jackson2JsonMessageConverter jsonConverter(DefaultClassMapper classMapper) {
-        Jackson2JsonMessageConverter jsonConverter = new Jackson2JsonMessageConverter();
-        jsonConverter.setClassMapper(classMapper);
-        return jsonConverter;
+        Jackson2JsonMessageConverter jsonMessageConverter = new Jackson2JsonMessageConverter();
+        jsonMessageConverter.setClassMapper(classMapper);
+        return jsonMessageConverter;
     }
 
     @Bean
     public DefaultClassMapper classMapper() {
         DefaultClassMapper classMapper = new DefaultClassMapper();
-        Map<String, Class<?>> idClassMap = new HashMap<>();
-        idClassMap.put("OrderCreateMessage", OrderCreateMessage.class);
-        classMapper.setIdClassMapping(idClassMap);
+        Map<String, Class<?>> idClassMapping = new HashMap<>();
+        idClassMapping.put("ProductStockUpdateMessageDto", ProductStockUpdateMessageDto.class);
+        classMapper.setIdClassMapping(idClassMapping);
         return classMapper;
     }
-
 
     @Bean
     public ConnectionFactory connectionFactory() {
@@ -93,13 +91,4 @@ public class RabbitMqConfig {
         RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
         return rabbitAdmin;
     }
-
-//    @Bean
-//    public SimpleMessageListenerContainer submittedOrdersMessageListenerContainer(ConnectionFactory connectionFactory, Queue ordersSubmitted_queue) {
-//        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer(connectionFactory);
-//        container.addQueueNames(RabbitMqConstants.ordersSubmitted_queue);
-//        MessageListenerAdapter messageListenerAdapter = new MessageListenerAdapter();
-//    }
-
-
 }

@@ -2,29 +2,18 @@ package xyz.peasfultown.ecommerce.order_service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import xyz.peasfultown.ecommerce.order_api.model.CartItem;
 import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
 import xyz.peasfultown.ecommerce.order_api.model.UpdateOrderStatusReq;
-import xyz.peasfultown.ecommerce.order_service.config.RabbitMqConstants;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderSubmission;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderItemEntity;
 import xyz.peasfultown.ecommerce.order_service.repository.OrderItemRepository;
@@ -33,11 +22,7 @@ import xyz.peasfultown.ecommerce.order_service.service.OrderService;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -48,27 +33,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@Import(TestcontainersConfiguration.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@SpringBootTest
 @Transactional
-@Testcontainers
 @Slf4j
 public class IntegrationTest {
-    @Container
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8")
-            .withDatabaseName("ecommerce_order_testdb")
-            .withUsername("testuser")
-            .withPassword("testpassword");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mysql::getJdbcUrl);
-        registry.add("spring.datasource.username", mysql::getUsername);
-        registry.add("spring.datasource.password", mysql::getPassword);
-        registry.add("spring.datasource.name", mysql::getDatabaseName);
-    }
-
     @Autowired
     private MockMvc mvc;
 
@@ -102,8 +73,8 @@ public class IntegrationTest {
                 .userId(userId)
                 .email("example1@email.com")
                 .phone("1234567890")
-                .number("123")
-                .street("Street St")
+                .streetNumber("123")
+                .streetName("Street St")
                 .city("City")
                 .state("State")
                 .country("Country")
@@ -146,8 +117,8 @@ public class IntegrationTest {
                 .userId(userId)
                 .email("example2@email.com")
                 .phone("1234567891")
-                .number("234")
-                .street("Street St")
+                .streetNumber("234")
+                .streetName("Street St")
                 .city("City")
                 .state("State")
                 .country("Country")
@@ -187,19 +158,7 @@ public class IntegrationTest {
                         .header("X-User-Id", oe1.getUserId().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.page.totalElements", is(2)))
-                .andExpect(jsonPath("$.content[0].id", is(oe1.getId())))
-                .andExpect(jsonPath("$.content[0].userId", is(oe1.getUserId())))
-                .andExpect(jsonPath("$.content[0].email", is(oe1.getEmail())))
-                .andExpect(jsonPath("$.content[0].phone", is(oe1.getPhone())))
-                .andExpect(jsonPath("$.content[0].number", is(oe1.getNumber())))
-                .andExpect(jsonPath("$.content[0].street", is(oe1.getStreet())))
-                .andExpect(jsonPath("$.content[0].city", is(oe1.getCity())))
-                .andExpect(jsonPath("$.content[0].state", is(oe1.getState())))
-                .andExpect(jsonPath("$.content[0].country", is(oe1.getCountry())))
-                .andExpect(jsonPath("$.content[0].postalCode", is(oe1.getPostalCode())))
-                .andExpect(jsonPath("$.content[0].status", is(oe1.getStatus().toString())))
-                .andExpect(jsonPath("$.content[0].totalPrice", is(oe1.getTotalPrice())))
+                .andExpect(jsonPath("$.page.totalElements").value(2))
                 ;
     }
 
@@ -223,18 +182,18 @@ public class IntegrationTest {
         mvc.perform(get("/api/v1/orders/{id}", oe1.getId())
                         .header("X-User-Id", oe1.getUserId().toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(oe1.getId())))
-                .andExpect(jsonPath("$.userId", is(oe1.getUserId())))
-                .andExpect(jsonPath("$.email", is(oe1.getEmail())))
-                .andExpect(jsonPath("$.phone", is(oe1.getPhone())))
-                .andExpect(jsonPath("$.number", is(oe1.getNumber())))
-                .andExpect(jsonPath("$.street", is(oe1.getStreet())))
-                .andExpect(jsonPath("$.city", is(oe1.getCity())))
-                .andExpect(jsonPath("$.state", is(oe1.getState())))
-                .andExpect(jsonPath("$.country", is(oe1.getCountry())))
-                .andExpect(jsonPath("$.postalCode", is(oe1.getPostalCode())))
-                .andExpect(jsonPath("$.status", is(oe1.getStatus().toString())))
-                .andExpect(jsonPath("$.totalPrice", is(oe1.getTotalPrice())))
+                .andExpect(jsonPath("$.id").value(oe1.getId().toString()))
+                .andExpect(jsonPath("$.userId").value(oe1.getUserId().toString()))
+                .andExpect(jsonPath("$.email").value(oe1.getEmail()))
+                .andExpect(jsonPath("$.phone").value(oe1.getPhone()))
+                .andExpect(jsonPath("$.streetNumber").value(oe1.getStreetNumber()))
+                .andExpect(jsonPath("$.streetName").value(oe1.getStreetName()))
+                .andExpect(jsonPath("$.city").value(oe1.getCity()))
+                .andExpect(jsonPath("$.state").value(oe1.getState()))
+                .andExpect(jsonPath("$.country").value(oe1.getCountry()))
+                .andExpect(jsonPath("$.postalCode").value(oe1.getPostalCode()))
+                .andExpect(jsonPath("$.status").value(oe1.getStatus().toString()))
+                .andExpect(jsonPath("$.totalPrice").value(oe1.getTotalPrice()))
                 ;
     }
 
@@ -245,8 +204,8 @@ public class IntegrationTest {
                         .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].status", is("PROCESSING")))
-                .andExpect(jsonPath("$.content[1].status", is("PROCESSING")))
+                .andExpect(jsonPath("$.content[0].status").value("PROCESSING"))
+                .andExpect(jsonPath("$.content[1].status").value("PROCESSING"))
                 ;
     }
 

@@ -18,193 +18,92 @@ tags:
     description: Product category, can query for products by categories
 
 paths:
+
   /api/v1/products:
+
     get:
       tags: [ product ]
       summary: Lists products with optional filters
       operationId: queryProducts
       parameters:
-        - name: name
-          in: query
-          schema:
-            type: string
-        - name: category
-          in: query
-          schema:
-            type: string
-        - name: minPrice
-          in: query
-          schema:
-            type: BigDecimal
-        - name: maxPrice
-          in: query
-          schema:
-            type: BigDecimal
-        - name: stockStatus
-          in: query
-          schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/ProductStockStatus'
-        - name: sortBy
-          in: query
-          schema:
-            type: string
-            enum:
-              - name
-              - category
-              - price
-        - name: sortDir
-          in: query
-          schema:
-            type: string
-            enum:
-              - asc
-              - desc
-        - name: page
-          in: query
-          schema:
-            type: integer
-            format: int32
-            default: 0
-        - name: size
-          in: query
-          schema:
-            type: integer
-            format: int32
-            default: 10
+        - $ref: '#/components/parameters/ProductNameQuery'
+        - $ref: '#/components/parameters/CategoryQuery'
+        - $ref: '#/components/parameters/MinPriceQuery'
+        - $ref: '#/components/parameters/MaxPriceQuery'
+        - $ref: '#/components/parameters/StockStatusQuery'
+        - $ref: '#/components/parameters/SortByQuery'
+        - $ref: '#/components/parameters/SortDirectionQuery'
+        - $ref: '#/components/parameters/PageNumberQuery'
+        - $ref: '#/components/parameters/PageSizeQuery'
       responses:
         '200':
-          description: Successful read returns list of products according to
-            the filters
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PagedProductResponse'
-        '401':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/PagedProduct'
 
     post:
       tags: [ product ]
-      summary: Add new product to the store
+      summary: Add new product to the store (admin)
       operationId: addProduct
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
       requestBody:
-        description: New product object request body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewProductReq'
-          application/xml:
-            schema:
-              $ref: '#/components/schemas/NewProductReq'
+        $ref: '#/components/requestBodies/CreateProduct'
       responses:
         '201':
-          description: Successfully added a new product to the store
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Product'
+          $ref: '#/components/responses/SingleProduct'
 
   /api/v1/products/batch:
     post:
       tags: [ product ]
       summary: Get products
-      operationId: getProducts
+      operationId: getProductBatchById
       requestBody:
-        description: Optional array of product IDs, if not present will 
-          return all
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/ProductId'
+        $ref: '#/components/requestBodies/BatchProductId'
       responses:
         '200':
-          description: Successful query
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Product'
+          $ref: '#/components/responses/BatchProduct'
 
 
-  /api/v1/products/{id}:
+  /api/v1/products/{productId}:
     get:
       tags: [ product ]
       summary: Get product by its ID
       operationId: getProductById
       parameters:
-        - name: id
-          in: path
-          required: true
-          example: 22222222-1111-1111-1111-111111111112
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ProductIdPath'
       responses:
         '200':
-          description: Successful read returns a product object
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
+          $ref: '#/components/responses/SingleProduct'
         '404':
-          description: Product not found by ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
     patch:
       tags: [ product ]
-      summary: Patch product properties
-      operationId: patchProductById
+      summary: Update product properties (admin)
+      operationId: updateProductById
       parameters:
-        - name: id
-          in: path
-          required: true
-          example: 22222222-1111-1111-1111-111111111112
-          schema:
-            type: string
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/ProductIdPath'
       requestBody:
-        description: Product patch request body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchProductReq'
+        $ref: '#/components/requestBodies/UpdateProduct'
       responses:
         '200':
-          description: Successfully updated product properties
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Product'
+          $ref: '#/components/responses/SingleProduct'
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
     delete:
       tags: [ product ]
-      summary: Delete a product by ID
+      summary: Delete a product by ID (admin)
       operationId: deleteProductById
       parameters:
-        - name: id
-          in: path
-          required: true
-          example: 22222222-1111-1111-1111-111111111112
-          schema:
-            type: string
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/ProductIdPath'
       responses:
         '204':
-          description: Successfully deleted product
+          description: Successfully deleted product, no content
+          content: {}
         '404':
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
   /api/v1/categories:
     get:
@@ -213,7 +112,7 @@ paths:
       operationId: getAllCategories
       responses:
         '200':
-          description: Successfully fetch all information about existent 
+          description: Successfully fetch all information about existing 
             categories
           content:
             application/json:
@@ -223,14 +122,16 @@ paths:
                   $ref: '#/components/schemas/Category'
     post:
       tags: [ category ]
-      summary: Create a new product category
+      summary: Create a new product category (admin)
       operationId: createCategory
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
       requestBody:
         description: New category creation request body
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewCategoryReq'
+              $ref: '#/components/schemas/CategoryCreateRequest'
       responses:
         '201':
           description: Successful product category creation
@@ -239,26 +140,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Category'
         '400':
-          description: Unable to create product category, possibly category 
-            already exists, or illegal arguments
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
-  /api/v1/categories/{id}:
+  /api/v1/categories/{categoryId}:
     patch:
       tags: [ category ]
-      summary: Update category information
+      summary: Update category information (admin)
       operationId: updateCategoryById
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/CategoryIdPath'
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchCategoryReq'
+              $ref: '#/components/schemas/CategoryUpdateRequest'
       responses:
         '200':
           description: Successful category information update
@@ -267,82 +163,205 @@ paths:
               schema:
                 $ref: '#/components/schemas/Category'
         '400':
-          description: Illegal arguments provided
-          $ref: '#/components/responses/Errorresponse'
+          $ref: '#/components/responses/Error'
         '404':
-          description: Category not found by specified ID
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
     delete:
       tags: [ category ]
-      summary: Delete a category by ID
+      summary: Delete a category by ID (admin)
       operationId: deleteCategoryById
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/CategoryIdPath'
       responses:
         '204':
           description: Successful deletion, returns nothing
           content: {}
         '404':
           description: Can't find category by provided ID
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
-  /api/v1/categories/{id}/products:
+  /api/v1/categories/{categoryId}/products:
     get:
       tags: [ category ]
       summary: Get all products of a particular category
-      operationId: getProductsByCategory
+      operationId: getProductsByCategoryId
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/CategoryIdPath'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Product'
+          $ref: '#/components/responses/BatchProduct'
         '404':
-          description: Category not found by specified ID
-          $ref: '#/components/responses/ErrorResponse'
+          $ref: '#/components/responses/Error'
 
 components:
-#  parameters:
-#    UserIdHeader:
-#      name: X-User-Id
-#      in: header
-#      required: true
-#      schema:
-#        type: string
-#    UserRoleHeader:
-#      name: X-User-Role
-#      in: header
-#      required: true
-#      schema:
-#        type: string
-#        enum:
-#          - ADMIN
-#          - CUSTOMER
-  responses:
 
-    ErrorResponse:
-      description: Error response object
+  parameters:
+
+    UserIdHeader:
+      name: X-User-Id
+      in: header
+      required: true
+      schema:
+        type: string
+
+    UserRoleHeader:
+      name: X-User-Role
+      in: header
+      required: true
+      schema:
+        type: string
+        enum:
+          - ADMIN
+          - CUSTOMER
+
+    ProductIdPath:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    CategoryIdPath:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    PageNumberQuery:
+      name: pageNumber
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    PageSizeQuery:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 10
+
+    StockStatusQuery:
+      name: stockStatus
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          $ref: '#/components/schemas/StockStatus'
+
+    SortByQuery:
+      name: sortBy
+      in: query
+      schema:
+        type: string
+        enum:
+          - name
+          - category
+          - price
+
+    SortDirectionQuery:
+      name: sortDir
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+
+    ProductNameQuery:
+      name: productName
+      in: query
+      required: false
+      schema:
+        type: string
+
+    CategoryQuery:
+      name: category
+      in: query
+      required: false
+      schema:
+        type: string
+
+    MinPriceQuery:
+      name: minPrice
+      in: query
+      required: false
+      schema:
+        type: BigDecimal
+
+    MaxPriceQuery:
+      name: maxPrice
+      in: query
+      required: false
+      schema:
+        type: BigDecimal
+
+  requestBodies:
+
+    CreateProduct:
+      description: New product creation request object
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ProductCreateRequest'
+
+    UpdateProduct:
+      description: Update request object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProductUpdateRequest'
+
+    BatchProductId:
+      description: A batch of product IDs
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BatchProductIdRequest'
+
+  responses:
+
+    Error:
+      description: Error response with details
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDetail'
+
+    PagedProduct:
+      description: Paged product response object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PagedProductResponse'
+
+    SingleProduct:
+      description: Single product response object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Product'
+
+    BatchProduct:
+      description: Array of products response object
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Product'
 
   schemas:
-    PagedResponsePage:
+
+    ResponsePage:
       type: object
       properties:
         size:
@@ -362,7 +381,7 @@ components:
           type: array
           items: {}
         page:
-          $ref: '#/components/schemas/PagedResponsePage'
+          $ref: '#/components/schemas/ResponsePage'
 
     PagedProductResponse:
       allOf:
@@ -374,29 +393,30 @@ components:
               items:
                 $ref: '#/components/schemas/Product'
 
-    ErrorResponse:
+    ErrorDetail:
       type: object
       properties:
         status:
           type: integer
-        error:
+        title:
           type: string
-        message:
+        detail:
           type: string
-        path:
+        instance:
           type: string
         timestamp:
           type: string
           format: date-time
       required: [ status, message ]
 
-    ProductStockStatus:
+    StockStatus:
       type: string
       enum:
         - IN_STOCK
         - OUT_OF_STOCK
         - LOW_STOCK
-    ProductActiveStatus:
+
+    ActiveStatus:
       type: string
       enum:
         - ACTIVE
@@ -412,14 +432,14 @@ components:
           type: string
         description:
           type: string
-      xml:
-        name: Category
 
-    ProductId:
+    BatchProductIdRequest:
       type: object
       properties:
-        id:
-          type: string
+        content:
+          type: array
+          items:
+            type: string
 
     Product:
       type: object
@@ -437,10 +457,13 @@ components:
           type: array
           items:
             type: string
-        activeStatus:
-          $ref: '#/components/schemas/ProductActiveStatus'
+        stock:
+          type: integer
+          format: int32
         stockStatus:
-          $ref: '#/components/schemas/ProductStockStatus'
+          $ref: '#/components/schemas/StockStatus'
+        activeStatus:
+          $ref: '#/components/schemas/ActiveStatus'
         category:
           $ref: '#/components/schemas/Category'
         createdAt:
@@ -449,10 +472,8 @@ components:
         updatedAt:
           type: string
           format: date-time
-      xml:
-        name: Product
 
-    PatchProductReq:
+    ProductUpdateRequest:
       type: object
       properties:
         name:
@@ -465,16 +486,15 @@ components:
           type: array
           items:
             type: string
-        stockStatus:
-          $ref: '#/components/schemas/ProductStockStatus'
+        stock:
+          type: integer
+          format: int32
         activeStatus:
-          $ref: '#/components/schemas/ProductActiveStatus'
+          $ref: '#/components/schemas/ActiveStatus'
         category:
           type: string
-      xml:
-        name: PatchProductReq
 
-    NewProductReq:
+    ProductCreateRequest:
       type: object
       required: [ name, imageUrls, price, category ]
       description: Request object for adding new product
@@ -491,14 +511,14 @@ components:
             type: string
         price:
           type: BigDecimal
-          example: 949.99
+        stock:
+          type: integer
+          format: int32
         category:
           type: string
           minLength: 5
-      xml:
-        name: NewProductReq
 
-    NewCategoryReq:
+    CategoryCreateRequest:
       type: object
       required: [ name ]
       description: Request object for creating a new product category
@@ -509,7 +529,7 @@ components:
         description:
           type: string
 
-    PatchCategoryReq:
+    CategoryUpdateRequest:
       type: object
       description: Request object for updating an existent product category
       properties:

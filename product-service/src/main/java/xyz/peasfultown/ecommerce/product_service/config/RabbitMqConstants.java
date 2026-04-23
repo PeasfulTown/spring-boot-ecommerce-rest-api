@@ -1,4 +1,4 @@
-package xyz.peasfultown.ecommerce.order_service.config;
+package xyz.peasfultown.ecommerce.product_service.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -7,16 +7,13 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMqConstants {
     public static final String TYPEID_HEADER = "__TypeId__";
     public static String exchange;
-    public static String order_createOrder_queue = "order.create-order.queue";
-    public static String cart_checkout_order_createOrder_routingKey = "cart.checkout.order.create-order";
-
-    public String getExchange() {
-        return exchange;
-    }
+    public static String product_updateStock_queue = "product.update-stock.queue";
+    public static String cart_checkout_product_updateStock_routingKey = "cart.checkout.product.update-stock";
 
     @Value("${spring.rabbitmq.template.default-exchange}")
     public void setExchange(String exchange) {
         RabbitMqConstants.exchange = exchange;
     }
+
 
 }
