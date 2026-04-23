@@ -1,14 +1,14 @@
 package xyz.peasfultown.ecommerce.product_service.service;
 
 import xyz.peasfultown.ecommerce.product_api.model.Category;
-import xyz.peasfultown.ecommerce.product_api.model.NewCategoryReq;
-import xyz.peasfultown.ecommerce.product_api.model.PatchCategoryReq;
+import xyz.peasfultown.ecommerce.product_api.model.CategoryCreateRequest;
+import xyz.peasfultown.ecommerce.product_api.model.CategoryUpdateRequest;
 import xyz.peasfultown.ecommerce.product_api.model.Product;
 
 import java.util.List;
 
 public interface CategoryService {
-    Category createNewCategory(NewCategoryReq newCategoryReq);
+    Category createNewCategory(CategoryCreateRequest updateReq);
 
     void deleteCategoryById(String id);
 
@@ -16,5 +16,5 @@ public interface CategoryService {
 
     List<Product> getProductsByCategory(String id);
 
-    Category updateCategoryById(String id, PatchCategoryReq patchCategoryReq);
+    Category updateCategoryById(String id, CategoryUpdateRequest updateReq);
 }

@@ -17,11 +17,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @Builder
 public class CategoryEntity {
+    @Builder.Default
     @Id
     @Column(name = "id", length = 36, nullable = false, updatable = false)
-    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.VARCHAR)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @Column(name = "name", unique = true, length = 50)
     private String name;
@@ -29,6 +29,6 @@ public class CategoryEntity {
     @Column(name = "description", length = 100)
     private String description;
 
-    @OneToMany(mappedBy = "category")
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     private List<ProductEntity> products;
 }

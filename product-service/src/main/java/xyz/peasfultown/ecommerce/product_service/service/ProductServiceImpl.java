@@ -1,15 +1,12 @@
 package xyz.peasfultown.ecommerce.product_service.service;
 
-import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import xyz.peasfultown.ecommerce.product_api.model.NewProductReq;
-import xyz.peasfultown.ecommerce.product_api.model.Product;
-import xyz.peasfultown.ecommerce.product_api.model.ProductId;
-import xyz.peasfultown.ecommerce.product_api.model.ProductStockStatus;
+import org.springframework.transaction.annotation.Transactional;
+import xyz.peasfultown.ecommerce.product_api.model.*;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
 import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 import xyz.peasfultown.ecommerce.product_service.exception.CategoryNotFoundException;
@@ -19,13 +16,15 @@ import xyz.peasfultown.ecommerce.product_service.repository.CategoryRepository;
 import xyz.peasfultown.ecommerce.product_service.repository.ProductRepository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
-import static javax.management.Query.in;
 import static xyz.peasfultown.ecommerce.product_service.repository.specification.ProductSpecification.*;
 
 @Service
+@Transactional
 public class ProductServiceImpl implements ProductService {
     private final ProductRepository repo;
     private final CategoryRepository caRepo;
@@ -37,12 +36,13 @@ public class ProductServiceImpl implements ProductService {
         this.mapper = mapper;
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Page<Product> queryProducts(String name,
                                        String category,
                                        BigDecimal minPrice,
                                        BigDecimal maxPrice,
-                                       List<ProductStockStatus> stockStatus,
+                                       List<StockStatus> stockStatus,
                                        String sortBy,
                                        String sortDir,
                                        Integer page,
@@ -65,29 +65,27 @@ public class ProductServiceImpl implements ProductService {
                         .and(hasPriceGreaterThan(minPrice))
                         .and(hasStockStatus(stockStatusListOf(stockStatus))),
                 pageable
-        ).map(mapper::entityToModel);
+        ).map(mapper::toModel);
     }
 
+    @Transactional(readOnly = true)
     @Override
-    public List<Product> getProducts(List<@Valid ProductId> productIds) {
-        if (productIds == null)
+    public List<Product> getProducts(BatchProductIdRequest req) {
+        if (req.getContent() == null || req.getContent().isEmpty())
             return mapper.entityListToModelList(repo.findAll());
 
-        List<UUID> uuids = productIds.stream().map(p -> UUID.fromString(p.getId())).toList();
+        List<UUID> uuids = req.getContent().stream().map(p -> UUID.fromString(p)).toList();
         return mapper.entityListToModelList(repo.findAll(hasIdsIn(uuids)));
     }
 
-    private List<ProductEntity.StockStatus> stockStatusListOf(List<ProductStockStatus> pssl) {
+    private List<ProductEntity.StockStatus> stockStatusListOf(List<StockStatus> pssl) {
         if (pssl == null || pssl.isEmpty()) return null;
-        return pssl.stream().map(this::stockStatusOf).toList();
-    }
-
-    private ProductEntity.StockStatus stockStatusOf(ProductStockStatus pss) {
-        return ProductEntity.StockStatus.fromValue(pss.getValue());
+        return pssl.stream().map(s ->
+                        ProductEntity.StockStatus.fromValue(s.getValue())).toList();
     }
 
     @Override
-    public Product createProduct(NewProductReq newProductReq) {
+    public Product createProduct(ProductCreateRequest newProductReq) {
         CategoryEntity ce = caRepo.findCategoryByName(newProductReq.getCategory())
                 .orElseThrow(() -> new CategoryNotFoundException(String.format(
                         "Category not found by name: %s", newProductReq.getCategory()
@@ -97,9 +95,45 @@ public class ProductServiceImpl implements ProductService {
                 .description(newProductReq.getDescription())
                 .imageUrls(newProductReq.getImageUrls())
                 .price(newProductReq.getPrice())
+                .stock(newProductReq.getStock() == null ? 0 : newProductReq.getStock())
                 .category(ce)
                 .build();
-        return mapper.entityToModel(repo.save(pe));
+        pe.setStockStatus();
+        return mapper.toModel(repo.save(pe));
+    }
+
+    @Override
+    public Product updateProductById(String productId, ProductUpdateRequest req) {
+        ProductEntity pe = repo.findById(UUID.fromString(productId))
+                .orElseThrow(() -> new ProductNotFoundException(String.format(
+                        "Product not found by ID: %s", productId
+                )));
+
+        if (Objects.nonNull(req.getName()))
+            pe.setName(req.getName());
+        if (Objects.nonNull(req.getDescription()))
+            pe.setDescription(req.getDescription());
+        if (Objects.nonNull(req.getPrice()))
+            pe.setPrice(req.getPrice());
+        if (Objects.nonNull(req.getImageUrls()))
+            pe.setImageUrls(req.getImageUrls());
+        if (Objects.nonNull(req.getActiveStatus()))
+            pe.setActiveStatus(
+                    ProductEntity.ActiveStatus.fromValue(req.getActiveStatus().getValue()));
+        if (Objects.nonNull(req.getStock())) {
+            pe.setStock(req.getStock());
+            pe.setStockStatus();
+        }
+        if (Objects.nonNull(req.getCategory())) {
+            CategoryEntity ce = caRepo.findCategoryByName(req.getCategory())
+                    .orElseThrow(() -> new CategoryNotFoundException(String.format(
+                            "Category not found by name: %s", req.getCategory()
+                    )));
+            pe.setCategory(ce);
+        }
+        pe.setUpdatedAt(Instant.now());
+        pe = repo.save(pe);
+        return mapper.toModel(pe);
     }
 
     @Override
@@ -114,6 +148,6 @@ public class ProductServiceImpl implements ProductService {
                         "Product not found by ID: %s", id
                 )));
 
-        return mapper.entityToModel(pe);
+        return mapper.toModel(pe);
     }
 }

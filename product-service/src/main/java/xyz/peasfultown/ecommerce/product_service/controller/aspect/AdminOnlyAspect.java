@@ -1,4 +1,4 @@
-package xyz.peasfultown.ecommerce.inventory_service.controller.aspect;
+package xyz.peasfultown.ecommerce.product_service.controller.aspect;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.aspectj.lang.JoinPoint;

@@ -6,9 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import xyz.peasfultown.ecommerce.product_api.CategoryApi;
 import xyz.peasfultown.ecommerce.product_api.model.Category;
-import xyz.peasfultown.ecommerce.product_api.model.NewCategoryReq;
-import xyz.peasfultown.ecommerce.product_api.model.PatchCategoryReq;
+import xyz.peasfultown.ecommerce.product_api.model.CategoryCreateRequest;
+import xyz.peasfultown.ecommerce.product_api.model.CategoryUpdateRequest;
 import xyz.peasfultown.ecommerce.product_api.model.Product;
+import xyz.peasfultown.ecommerce.product_service.controller.aspect.AdminOnly;
 import xyz.peasfultown.ecommerce.product_service.service.CategoryService;
 
 import java.util.List;
@@ -24,13 +25,21 @@ public class CategoryController implements CategoryApi {
         this.service = service;
     }
 
+    @AdminOnly
     @Override
-    public ResponseEntity<Category> createCategory(@Valid NewCategoryReq newCategoryReq) throws Exception {
+    public ResponseEntity<Category> createCategory(String userRole, CategoryCreateRequest newCategoryReq) throws Exception {
         return status(HttpStatus.CREATED).body(service.createNewCategory(newCategoryReq));
     }
 
+    @AdminOnly
     @Override
-    public ResponseEntity<Void> deleteCategoryById(String id) throws Exception {
+    public ResponseEntity<Category> updateCategoryById(String userRole, String id, CategoryUpdateRequest categoryUpdateRequest) throws Exception {
+        return ok(service.updateCategoryById(id, categoryUpdateRequest));
+    }
+
+    @AdminOnly
+    @Override
+    public ResponseEntity<Void> deleteCategoryById(String userRole, String id) throws Exception {
         service.deleteCategoryById(id);
         return status(HttpStatus.NO_CONTENT).build();
     }
@@ -41,12 +50,8 @@ public class CategoryController implements CategoryApi {
     }
 
     @Override
-    public ResponseEntity<List<Product>> getProductsByCategory(String id) throws Exception {
+    public ResponseEntity<List<Product>> getProductsByCategoryId(String id) throws Exception {
         return ok(service.getProductsByCategory(id));
     }
 
-    @Override
-    public ResponseEntity<Category> updateCategoryById(String id, PatchCategoryReq patchCategoryReq) throws Exception {
-        return status(HttpStatus.ACCEPTED).body(service.updateCategoryById(id, patchCategoryReq));
-    }
 }

@@ -1,4 +1,4 @@
-package xyz.peasfultown.ecommerce.inventory_service.controller.aspect;
+package xyz.peasfultown.ecommerce.product_service.controller.aspect;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
