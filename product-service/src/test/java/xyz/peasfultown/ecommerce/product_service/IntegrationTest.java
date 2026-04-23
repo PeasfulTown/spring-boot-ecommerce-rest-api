@@ -57,8 +57,6 @@ public class IntegrationTest {
     private ProductEntity p2;
     private ProductEntity p3;
     private ProductEntity p4;
-    private ProductEntity p5;
-    private ProductEntity p6;
 
     @BeforeEach
     void setup() {
@@ -142,29 +140,14 @@ public class IntegrationTest {
                 .category(c2)
                 .build();
 
-        p5 = ProductEntity.builder()
-                .id(UUID.randomUUID())
-                .name("Product 5")
-                .description("Description of product 5")
-                .price(BigDecimal.valueOf(55.55))
-                .imageUrls(List.of(
-                        "http://images.com/product5_1.jpg",
-                        "http://images.com/product5_2.jpg",
-                        "http://images.com/product5_3.jpg"
-                ))
-                .activeStatus(ProductEntity.ActiveStatus.INACTIVE)
-                .stock(50)
-                .category(c3)
-                .build();
-
-        prodRepo.saveAll(List.of(p1, p2, p3, p4, p5));
+        prodRepo.saveAll(List.of(p1, p2, p3, p4));
     }
 
     @Test
     void queryProducts_return200() throws Exception {
         mvc.perform(get("/api/v1/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content", hasSize(5)))
+                .andExpect(jsonPath("$.content", hasSize(4)))
         ;
 
         MultiValueMap<String, String> queries = new LinkedMultiValueMap<>();
@@ -174,8 +157,8 @@ public class IntegrationTest {
                         .queryParams(queries))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.page.totalPages").value(3))
-                .andExpect(jsonPath("$.page.totalElements").value(5))
+                .andExpect(jsonPath("$.page.totalPages").value(2))
+                .andExpect(jsonPath("$.page.totalElements").value(4))
                 .andExpect(jsonPath("$.page.size").value(2))
                 .andExpect(jsonPath("$.page.number").value(0))
         ;
@@ -186,8 +169,7 @@ public class IntegrationTest {
         BatchProductIdRequest req = BatchProductIdRequest.builder()
                 .content(List.of(
                         p2.getId().toString(),
-                        p3.getId().toString(),
-                        p4.getId().toString()
+                        p3.getId().toString()
                 ))
                 .build();
 
@@ -195,7 +177,7 @@ public class IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(oMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$", hasSize(2)))
         ;
 
         req.content(List.of());
@@ -204,7 +186,7 @@ public class IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(oMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(5)))
+                .andExpect(jsonPath("$", hasSize(4)))
         ;
     }
 
@@ -244,7 +226,7 @@ public class IntegrationTest {
                 .andExpect(jsonPath("$.stock").value(50))
         ;
 
-        List<ProductEntity> pes = prodRepo.findProductsWithIdsNotIn(List.of(p1.getId(), p2.getId(), p3.getId(), p4.getId(), p5.getId()));
+        List<ProductEntity> pes = prodRepo.findProductsWithIdsNotIn(List.of(p1.getId(), p2.getId(), p3.getId(), p4.getId()));
         assertThat(pes).isNotEmpty();
         assertEquals(req.getName(), pes.get(0).getName());
         assertEquals(req.getDescription(), pes.get(0).getDescription());

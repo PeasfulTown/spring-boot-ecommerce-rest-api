@@ -2,7 +2,7 @@ spring:
   flyway:
     enabled: true
     clean-disabled: false
-    locations: classpath:db/migration,classpath:db/testdata
+    locations: classpath:db/migration
 
   jpa:
     show-sql: true
