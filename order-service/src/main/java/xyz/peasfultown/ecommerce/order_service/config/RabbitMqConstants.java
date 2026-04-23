@@ -5,9 +5,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMqConstants {
+    public static final String TYPEID_HEADER = "__TypeId__";
     public static String exchange;
-    public static String orderSubmitted_queue = "order.submitted";
-    public static String orderSubmitted_routingKey = "order.submitted";
+    public static String order_createOrder_queue = "order.create-order.queue";
+    public static String cart_checkout_order_createOrder_routingKey = "cart.checkout.order.create-order";
 
     public String getExchange() {
         return exchange;
@@ -17,6 +18,5 @@ public class RabbitMqConstants {
     public void setExchange(String exchange) {
         RabbitMqConstants.exchange = exchange;
     }
-
 
 }

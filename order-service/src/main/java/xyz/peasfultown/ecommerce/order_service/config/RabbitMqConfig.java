@@ -9,10 +9,15 @@ import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.support.converter.DefaultClassMapper;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Configuration
@@ -38,20 +43,32 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Queue orderSubmitted_queue() {
-        return new Queue(RabbitMqConstants.orderSubmitted_queue);
+    public Queue order_createOrder_queue() {
+        return new Queue(RabbitMqConstants.order_createOrder_queue);
     }
 
     @Bean
-    public Binding orderSubmitted_queue_binding(Queue orderSubmitted_queue,
-                                                TopicExchange exchange) {
-        return BindingBuilder.bind(orderSubmitted_queue).to(exchange).with(RabbitMqConstants.orderSubmitted_routingKey);
+    public Binding cart_checkout_order_createOrder_routingKey(Queue order_createOrder_queue,
+                                                              TopicExchange exchange) {
+        return BindingBuilder.bind(order_createOrder_queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_createOrder_routingKey);
     }
 
     @Bean
-    public Jackson2JsonMessageConverter jsonConverter() {
-        return new Jackson2JsonMessageConverter();
+    public Jackson2JsonMessageConverter jsonConverter(DefaultClassMapper classMapper) {
+        Jackson2JsonMessageConverter jsonConverter = new Jackson2JsonMessageConverter();
+        jsonConverter.setClassMapper(classMapper);
+        return jsonConverter;
     }
+
+    @Bean
+    public DefaultClassMapper classMapper() {
+        DefaultClassMapper classMapper = new DefaultClassMapper();
+        Map<String, Class<?>> idClassMap = new HashMap<>();
+        idClassMap.put("OrderCreateMessage", OrderCreateMessage.class);
+        classMapper.setIdClassMapping(idClassMap);
+        return classMapper;
+    }
+
 
     @Bean
     public ConnectionFactory connectionFactory() {

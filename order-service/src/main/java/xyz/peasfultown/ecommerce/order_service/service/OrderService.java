@@ -3,6 +3,7 @@ package xyz.peasfultown.ecommerce.order_service.service;
 import org.springframework.data.domain.Page;
 import xyz.peasfultown.ecommerce.order_api.model.Order;
 import xyz.peasfultown.ecommerce.order_api.model.UpdateOrderStatusReq;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
 
 import java.util.List;
 
@@ -18,4 +19,6 @@ public interface OrderService {
     List<Order> getOrdersByUserId(String userId);
 
     void updateOrderStatus(String orderId, UpdateOrderStatusReq updateOrderStatusReq);
+
+    void createOrder(OrderCreateMessage message);
 }

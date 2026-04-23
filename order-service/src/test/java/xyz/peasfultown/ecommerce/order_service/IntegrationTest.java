@@ -2,29 +2,18 @@ package xyz.peasfultown.ecommerce.order_service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import xyz.peasfultown.ecommerce.order_api.model.CartItem;
 import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
 import xyz.peasfultown.ecommerce.order_api.model.UpdateOrderStatusReq;
-import xyz.peasfultown.ecommerce.order_service.config.RabbitMqConstants;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderSubmission;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderItemEntity;
 import xyz.peasfultown.ecommerce.order_service.repository.OrderItemRepository;
@@ -33,11 +22,7 @@ import xyz.peasfultown.ecommerce.order_service.service.OrderService;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -48,27 +33,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@Import(TestcontainersConfiguration.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@SpringBootTest
 @Transactional
-@Testcontainers
 @Slf4j
 public class IntegrationTest {
-    @Container
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8")
-            .withDatabaseName("ecommerce_order_testdb")
-            .withUsername("testuser")
-            .withPassword("testpassword");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mysql::getJdbcUrl);
-        registry.add("spring.datasource.username", mysql::getUsername);
-        registry.add("spring.datasource.password", mysql::getPassword);
-        registry.add("spring.datasource.name", mysql::getDatabaseName);
-    }
-
     @Autowired
     private MockMvc mvc;
 

@@ -1,134 +1,127 @@
 package xyz.peasfultown.ecommerce.order_service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import xyz.peasfultown.ecommerce.order_api.model.CartItem;
+import xyz.peasfultown.ecommerce.order_api.model.OrderItem;
 import xyz.peasfultown.ecommerce.order_service.config.RabbitMqConstants;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderSubmission;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
+import xyz.peasfultown.ecommerce.order_service.entity.OrderItemEntity;
+import xyz.peasfultown.ecommerce.order_service.repository.OrderItemRepository;
 import xyz.peasfultown.ecommerce.order_service.repository.OrderRepository;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@Import(TestcontainersConfiguration.class)
 @SpringBootTest
-@ActiveProfiles("test")
-@Transactional
-@Testcontainers
+@ActiveProfiles({"test", "rabbitmq"})
 @Slf4j
 public class MessageConsumerTest {
-    @Container
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8")
-            .withDatabaseName("ecommerce_order_testdb")
-            .withUsername("testuser")
-            .withPassword("testpassword");
-
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", mysql::getJdbcUrl);
-        registry.add("spring.datasource.username", mysql::getUsername);
-        registry.add("spring.datasource.password", mysql::getPassword);
-        registry.add("spring.datasource.name", mysql::getDatabaseName);
-    }
-
     @Autowired
     private OrderRepository orderRepo;
 
     @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    private static RabbitAdmin rabbitAdmin;
+    private OrderItemRepository oiRepo;
 
     @Autowired
-    private void setRabbitAdmin(RabbitAdmin rabbitAdmin) {
-        MessageConsumerTest.rabbitAdmin = rabbitAdmin;
-    }
+    private ObjectMapper oMapper;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Test
     void consumeSubmittedOrderQueue_savesToDb() throws Exception {
-        CartItem ci1 = CartItem.builder()
-                .id(UUID.randomUUID().toString())
+        OrderItem ci1 = OrderItem.builder()
                 .productId(UUID.randomUUID().toString())
                 .productName("Product 1")
                 .productPrice(BigDecimal.valueOf(111.11))
                 .quantity(2)
                 .subtotal(BigDecimal.valueOf(222.22))
                 .build();
-        CartItem ci2 = CartItem.builder()
-                .id(UUID.randomUUID().toString())
+        OrderItem ci2 = OrderItem.builder()
                 .productId(UUID.randomUUID().toString())
                 .productName("Product 2")
                 .productPrice(BigDecimal.valueOf(222.22))
                 .quantity(1)
                 .subtotal(BigDecimal.valueOf(222.22))
                 .build();
-        OrderSubmission message = OrderSubmission.builder()
+        OrderCreateMessage messageBody = OrderCreateMessage.builder()
                 .userId(UUID.randomUUID().toString())
-                .contactEmail("email@example.com")
-                .contactPhone("1234567899")
-                .addressNumber("123")
-                .addressStreet("Street St")
-                .addressCity("City")
-                .addressState("State")
-                .addressCountry("Country")
-                .addressPostalCode("111AAA")
-                .orderTotal(BigDecimal.valueOf(444.44))
-                .orderItemCount(3)
+                .email("email@example.com")
+                .phone("1234567899")
+                .streetNumber("123")
+                .streetName("Street St")
+                .city("City")
+                .state("State")
+                .country("Country")
+                .postalCode("111AAA")
+                .totalPrice(BigDecimal.valueOf(444.44))
+                .itemCount(3)
                 .items(List.of(ci1, ci2))
                 .build();
 
-        log.info("Sending message with UserID: {}", message.getUserId());
-        rabbitTemplate.convertAndSend(RabbitMqConstants.orderSubmitted_routingKey, message);
+        Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(messageBody))
+                        .setHeader("__TypeId__", OrderCreateMessage.class.getSimpleName())
+                .setContentType(MessageProperties.CONTENT_TYPE_JSON)
+                .build();
+
+        rabbitTemplate.send(RabbitMqConstants.cart_checkout_order_createOrder_routingKey, message);
         await().atMost(10, TimeUnit.SECONDS)
+                .pollDelay(2, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .until(() -> orderRepo.count() > 0);
-        log.info("Querying for orders for userId: {}", UUID.fromString(message.getUserId()));
-        List<OrderEntity> list = orderRepo.findOrdersByUserId(UUID.fromString(message.getUserId()));
-        assertThat(list).isNotEmpty();
-        log.info("List size: {}", list.size());
-        OrderEntity oe = list.get(0);
-        assertEquals(message.getUserId(), oe.getUserId().toString());
-        assertEquals(message.getContactEmail(), oe.getEmail());
-        assertEquals(message.getContactPhone(), oe.getPhone());
-        assertEquals(message.getAddressNumber(), oe.getNumber());
-        assertEquals(message.getAddressStreet(), oe.getStreet());
-        assertEquals(message.getAddressCity(), oe.getCity());
-        assertEquals(message.getAddressState(), oe.getState());
-        assertEquals(message.getAddressCountry(), oe.getCountry());
-        assertEquals(message.getOrderTotal(), oe.getTotalPrice());
-        assertEquals(message.getOrderItemCount(), oe.getItemCount());
-        assertEquals(2, oe.getItems().size());
 
-        assertNotNull(oe.getItems().get(0).getId());
-        assertNotNull(oe.getItems().get(0).getProductId());
-        assertNotNull(oe.getItems().get(0).getProductName());
-        assertNotNull(oe.getItems().get(0).getProductPrice());
-        assertNotNull(oe.getItems().get(0).getQuantity());
-        assertNotNull(oe.getItems().get(0).getSubtotal());
-        assertNotNull(oe.getItems().get(1).getId());
-        assertNotNull(oe.getItems().get(1).getProductId());
-        assertNotNull(oe.getItems().get(1).getProductName());
-        assertNotNull(oe.getItems().get(1).getProductPrice());
-        assertNotNull(oe.getItems().get(1).getQuantity());
-        assertNotNull(oe.getItems().get(1).getSubtotal());
+        Optional<OrderEntity> oeo = Optional.of(orderRepo.findAll().get(0));
+        assertThat(oeo).isPresent();
+        OrderEntity oe = oeo.get();
+
+        assertEquals(messageBody.getUserId(), oe.getUserId().toString());
+        assertEquals(messageBody.getEmail(), oe.getEmail());
+        assertEquals(messageBody.getPhone(), oe.getPhone());
+        assertEquals(messageBody.getStreetNumber(), oe.getNumber());
+        assertEquals(messageBody.getStreetName(), oe.getStreet());
+        assertEquals(messageBody.getCity(), oe.getCity());
+        assertEquals(messageBody.getState(), oe.getState());
+        assertEquals(messageBody.getCountry(), oe.getCountry());
+        assertEquals(messageBody.getTotalPrice(), oe.getTotalPrice());
+        assertEquals(messageBody.getItemCount(), oe.getItemCount());
+
+        List<OrderItemEntity> ois = oiRepo.findOrderItemsByOrderId(oe.getId());
+        assertEquals(2, ois.size());
+
+        Map<String, OrderItem> orderItemMap = messageBody.getItems().stream().collect(Collectors.toMap(o ->
+               o.getProductId(), Function.identity()
+        ));
+        ois.forEach(o -> {
+            Optional<OrderItem> oio = Optional.ofNullable(orderItemMap.get(o.getProductId().toString()));
+            assertThat(oio).isNotEmpty();
+            OrderItem oi = oio.get();
+            assertEquals(oi.getProductName(), o.getProductName());
+            assertEquals(oi.getProductPrice(), o.getProductPrice());
+            assertEquals(oi.getQuantity(), o.getQuantity());
+            assertEquals(oi.getSubtotal(), o.getSubtotal());
+        });
     }
 
 }

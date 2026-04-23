@@ -1,0 +1,19 @@
+spring:
+  flyway:
+    enabled: true
+    clean-disabled: false
+    locations: classpath:db/migration
+
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type.descriptor.sql.BasicBinder: TRACE
+      springframework:
+        amqp: DEBUG
+
+
