@@ -15,13 +15,15 @@ tags:
     description: User order management
 
 paths:
+
   /api/v1/orders:
     get:
       tags: [ order ]
-      summary: Get all a user's order, paged
-      operationId: getMyOrders
+      summary: Get all orders paginated
+      operationId: getAllOrders
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
         - $ref: '#/components/parameters/OrderStatusQuery'
         - $ref: '#/components/parameters/PageNumber'
         - $ref: '#/components/parameters/PageSize'
@@ -33,30 +35,15 @@ paths:
     get:
       tags: [ order ]
       summary: Get order by ID
-      operationId: getMyOrderById
+      operationId: getOrderById
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
         - $ref: '#/components/parameters/OrderIdPath'
       responses:
         '200':
           $ref: '#/components/responses/SingleOrder'
         '404':
-          $ref: '#/components/responses/Error'
-
-  /api/v1/orders/all:
-    get:
-      tags: [ order ]
-      summary: Get paged orders access all users (admin)
-      operationId: getAllUsersOrders
-      parameters:
-        - $ref: '#/components/parameters/UserRoleHeader'
-        - $ref: '#/components/parameters/PageNumber'
-        - $ref: '#/components/parameters/PageSize'
-      responses:
-        '200':
-          $ref: '#/components/responses/PagedOrder'
-
-        '403':
           $ref: '#/components/responses/Error'
 
   /api/v1/orders/user/{userId}:
@@ -67,9 +54,12 @@ paths:
       parameters:
         - $ref: '#/components/parameters/UserRoleHeader'
         - $ref: '#/components/parameters/UserIdPath'
+        - $ref: '#/components/parameters/OrderStatusQuery'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
       responses:
         '200':
-          $ref: '#/components/responses/BatchOrder'
+          $ref: '#/components/responses/PagedOrder'
 
   /api/v1/orders/{orderId}/status:
     patch:
@@ -84,27 +74,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateOrderStatusReq'
+              $ref: '#/components/schemas/OrderUpdateRequest'
       responses:
         '204':
           description: Successful update
           content: {}
-
-  /api/v1/orders/status/{status}:
-    get:
-      tags: [ order ]
-      summary: Get orders by status
-      operationId: getOrdersByStatus
-      parameters:
-        - $ref: '#/components/parameters/UserRoleHeader'
-        - $ref: '#/components/parameters/OrderStatusPath'
-        - $ref: '#/components/parameters/PageNumber'
-        - $ref: '#/components/parameters/PageSize'
-      responses:
-        '200':
-          $ref: '#/components/responses/PagedOrder'
-        '403':
-          $ref: '#/components/responses/Error'
 
 components:
 
@@ -146,25 +120,13 @@ components:
       in: path
       required: true
       schema:
-        type: string
-        enum:
-          - PROCESSING
-          - SHIPPED
-          - OUT_FOR_DELIVERY
-          - COMPLETED
-          - CANCELLED
+        $ref: '#/components/schemas/OrderStatus'
 
     OrderStatusQuery:
       name: status
       in: query
       schema:
-        type: string
-        enum:
-          - PROCESSING
-          - SHIPPED
-          - OUT_FOR_DELIVERY
-          - COMPLETED
-          - CANCELLED
+        $ref: '#/components/schemas/OrderStatus'
 
     PageNumber:
       name: page
@@ -332,7 +294,7 @@ components:
         subtotal:
           type: BigDecimal
 
-    UpdateOrderStatusReq:
+    OrderUpdateRequest:
       type: object
       required: [ orderStatus ]
       properties:

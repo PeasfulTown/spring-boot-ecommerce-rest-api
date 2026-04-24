@@ -51,7 +51,7 @@ public class MessageConsumerTest {
     private RabbitTemplate rabbitTemplate;
 
     @Test
-    void consumeSubmittedOrderQueue_savesToDb() throws Exception {
+    void consumeOrderCreateMessage_whenCartCheckout_savesInDb() throws Exception {
         OrderItem ci1 = OrderItem.builder()
                 .productId(UUID.randomUUID().toString())
                 .productName("Product 1")

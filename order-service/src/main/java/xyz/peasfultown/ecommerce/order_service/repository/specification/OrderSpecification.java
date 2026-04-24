@@ -7,13 +7,13 @@ import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 import java.util.UUID;
 
 public class OrderSpecification {
-    public static Specification<OrderEntity> hasStatus(String statusStr) {
+    public static Specification<OrderEntity> hasStatus(OrderEntity.OrderStatus status) {
         return (root, query, cb) ->
-        statusStr == null ? null : cb.equal(root.get("status"), OrderEntity.OrderStatus.valueOf(statusStr));
+        status == null ? null : cb.equal(root.get("status"), status);
     }
 
     public static Specification<OrderEntity> hasUserId(UUID userId) {
         return (root, query, cb) ->
-        cb.equal(root.get("userId"), userId);
+        userId == null ? null : cb.equal(root.get("userId"), userId);
     }
 }

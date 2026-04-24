@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
+import xyz.peasfultown.ecommerce.order_service.exception.NotAuthorizedException;
 
 @Aspect
 @Component
@@ -21,6 +22,6 @@ public class AdminOnlyAspect {
         String role = request.getHeader("X-User-Role");
 
         if (!"ADMIN".equals(role))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access required");
+            throw new NotAuthorizedException("Admin access required");
     }
 }
