@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMqConstants {
     public static String exchange;
-    public static String orderSubmitted_queue = "orders.submitted";
-    public static String bindingKey = "order.submit";
+    public static String order_createOrder_queue = "order.create-order.queue";
+    public static String cart_checkout_routingKey = "cart.checkout.#";
 
     @Value("${spring.rabbitmq.template.default-exchange}")
     public void setExchange(String exchange) {
@@ -15,23 +15,23 @@ public class RabbitMqConstants {
     }
 
     public void setQueue(String queue) {
-        RabbitMqConstants.orderSubmitted_queue = queue;
+        RabbitMqConstants.order_createOrder_queue = queue;
     }
 
     public void setBindingKey(String bindingKey) {
-        RabbitMqConstants.bindingKey = bindingKey;
+        RabbitMqConstants.cart_checkout_routingKey = bindingKey;
     }
 
-    public static String getExchange() {
+    public String getExchange() {
         return exchange;
     }
 
-    public static String getOrderSubmitted_queue() {
-        return orderSubmitted_queue;
+    public String getOrderSubmitted_queue() {
+        return order_createOrder_queue;
     }
 
-    public static String getBindingKey() {
-        return bindingKey;
+    public String getBindingKey() {
+        return cart_checkout_routingKey;
     }
 
 }

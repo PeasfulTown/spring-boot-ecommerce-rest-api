@@ -196,6 +196,7 @@ components:
 
     Cart:
       type: object
+      required: [ id, userId, totalItems, totalPrice ]
       properties:
         id:
           type: string
@@ -213,6 +214,7 @@ components:
 
     CartItem:
       type: object
+      required: [ id, productId, productName, productPrice, quantity, subtotal ]
       properties:
         id:
           type: string
@@ -243,6 +245,7 @@ components:
 
     Product:
       type: object
+      required: [ id, name, description, imageUrls, stockStatus, activeStatus ]
       description: The product object
       properties:
         id:

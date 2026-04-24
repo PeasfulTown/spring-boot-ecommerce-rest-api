@@ -13,7 +13,6 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import xyz.peasfultown.ecommerce.cart_api.model.CartCheckoutRequest;
 
 import java.util.HashMap;
@@ -44,16 +43,16 @@ public class RabbitMqConfig {
 
     @Bean
     public Queue queue() {
-        return new Queue(RabbitMqConstants.orderSubmitted_queue);
+        return new Queue(RabbitMqConstants.order_createOrder_queue);
     }
 
     @Bean
     public Binding binding(TopicExchange exchange, Queue queue) {
-        return BindingBuilder.bind(queue).to(exchange).with(RabbitMqConstants.bindingKey);
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMqConstants.cart_checkout_routingKey);
     }
 
     @Bean
-    public Jackson2JsonMessageConverter messageConverter(DefaultClassMapper classMapper) {
+    public Jackson2JsonMessageConverter jsonConverter(DefaultClassMapper classMapper) {
         Jackson2JsonMessageConverter jsonConverter = new Jackson2JsonMessageConverter();
         jsonConverter.setClassMapper(classMapper);
         return jsonConverter;
@@ -63,23 +62,22 @@ public class RabbitMqConfig {
     public DefaultClassMapper classMapper() {
         DefaultClassMapper classMapper = new DefaultClassMapper();
         Map<String, Class<?>> idClassMapping = new HashMap<>();
-        idClassMapping.put("CartCheckoutReq", CartCheckoutRequest.class);
+        idClassMapping.put("CartCheckoutRequest", CartCheckoutRequest.class);
         classMapper.setIdClassMapping(idClassMapping);
         return classMapper;
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, TopicExchange exchange, Jackson2JsonMessageConverter messageConverter) {
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, TopicExchange exchange, Jackson2JsonMessageConverter jsonConverter) {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setExchange(exchange.getName());
-        template.setMessageConverter(messageConverter);
+        template.setMessageConverter(jsonConverter);
         return template;
     }
 
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory(this.host);
-        connectionFactory.setVirtualHost("/");
         connectionFactory.setPort(this.port);
         connectionFactory.setUsername(this.username);
         connectionFactory.setPassword(this.password);
@@ -88,7 +86,6 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    @Profile("test")
     public RabbitAdmin rabbitAdmin(CachingConnectionFactory connectionFactory) {
         RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);
         return rabbitAdmin;

@@ -16,30 +16,21 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class CartItemEntity {
+    @Builder.Default
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "product_id", nullable = false, updatable = false)
     private UUID productId;
 
-    @Column(name = "product_name", nullable = false)
-    private String productName;
-
-    @Column(name = "product_price", nullable = false)
-    private BigDecimal productPrice;
-
     @Builder.Default
     @Column(name = "quantity", nullable = false)
     private int quantity = 1;
 
-    @Column(name = "subtotal", nullable = false)
-    private BigDecimal subtotal;
-
     @ManyToOne
-    @JoinColumn(name = "cart_id", nullable = false)
+    @JoinColumn(name = "cart_id")
     private CartEntity cart;
 }

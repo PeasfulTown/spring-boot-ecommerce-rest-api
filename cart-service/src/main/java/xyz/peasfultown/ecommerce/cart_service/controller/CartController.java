@@ -32,7 +32,7 @@ public class CartController implements CartApi {
 
     @Override
     public ResponseEntity<Void> clearCart(String userId) throws Exception {
-        service.clearUserCart(userId);
+        service.clearCart(userId);
         return status(HttpStatus.NO_CONTENT).build();
     }
 
