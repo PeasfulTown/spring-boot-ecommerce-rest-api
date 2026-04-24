@@ -16,6 +16,7 @@ import xyz.peasfultown.ecommerce.cart_service.client.ProductServiceClient;
 import xyz.peasfultown.ecommerce.cart_service.client.UserServiceClient;
 import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
 import xyz.peasfultown.ecommerce.cart_service.dto.Address;
+import xyz.peasfultown.ecommerce.cart_service.dto.BatchProductIdRequest;
 import xyz.peasfultown.ecommerce.cart_service.dto.OrderSubmission;
 import xyz.peasfultown.ecommerce.cart_service.dto.User;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
@@ -65,7 +66,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public CartItem addItemToCart(String userId, AddItemReq req) {
+    public CartItem addItemToCart(String userId, ItemCreateRequest req) {
         CartEntity ce = getCartEntityByUserId(userId);
 
         Product prod = getProductById(req.getProductId());
@@ -111,8 +112,8 @@ public class CartServiceImpl implements CartService {
         } else {
             cart = ceo.get();
             if (!cart.getItems().isEmpty()) {
-                List<ProductId> productIds = cart.getItems().stream().map(i ->
-                        new ProductId().id(i.getProductId().toString())).toList();
+                List<String> productIds = cart.getItems().stream().map(i ->
+                        i.getProductId().toString()).toList();
                 List<Product> products = getProductsByIds(productIds);
                 updateCartItemAndProductLinks(cart.getItems(), products);
                 calculateCartEntityItemCountAndTotalPrice(cart);
@@ -127,15 +128,15 @@ public class CartServiceImpl implements CartService {
         ResponseEntity<Product> res = prodClient.getProductById(productId);
         Product prod = res.getBody();
 
-        if (prod.getStockStatus().equals(ProductStockStatus.OUT_OF_STOCK))
+        if (prod.getStockStatus().equals(StockStatus.OUT_OF_STOCK))
             throw new ProductOutOfStockException(prod.getId());
 
         return prod;
     }
 
-    private List<Product> getProductsByIds(List<ProductId> productIds) {
+    private List<Product> getProductsByIds(List<String> productIds) {
         // TODO: maybe add checks for products that were made inactive/out of stock
-        ResponseEntity<List<Product>> res = prodClient.getProductsByIds(productIds);
+        ResponseEntity<List<Product>> res = prodClient.getProductsByIds(new BatchProductIdRequest(productIds));
         return res.getBody();
     }
 
@@ -194,7 +195,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public CartItem updateCartItemQuantity(String userId, String itemId, UpdateItemQuantityReq req) {
+    public CartItem updateCartItemQuantity(String userId, String itemId, ItemQuantityUpdateRequest req) {
         CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
                 .orElseThrow(() -> new CartNotFoundException(String.format(
                         "Cart not found by user ID: %s", userId
@@ -216,7 +217,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public void checkoutCart(String userId, CartCheckoutReq cartCheckoutReq) {
+    public void checkoutCart(String userId, CartCheckoutRequest cartCheckoutReq) {
         CartEntity cart = getCartEntityByUserId(userId);
         if (cart.getItems().size() == 0)
             throw new EmptyCartCheckoutException("Cannot checkout with an empty cart");

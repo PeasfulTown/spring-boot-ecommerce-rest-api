@@ -153,8 +153,8 @@ public class IntegrationTest {
                         "http://wwww.images.com/products/product1_2.jpg",
                         "http://wwww.images.com/products/product1_3.jpg"
                 ))
-                .stockStatus(ProductStockStatus.IN_STOCK)
-                .activeStatus(ProductActiveStatus.ACTIVE);
+                .stockStatus(StockStatus.IN_STOCK)
+                .activeStatus(ActiveStatus.ACTIVE);
         p2 = new Product()
                 .id(UUID.randomUUID().toString())
                 .name("Product 2")
@@ -165,8 +165,8 @@ public class IntegrationTest {
                         "http://wwww.images.com/products/product2_2.jpg",
                         "http://wwww.images.com/products/product2_3.jpg"
                 ))
-                .stockStatus(ProductStockStatus.IN_STOCK)
-                .activeStatus(ProductActiveStatus.ACTIVE);
+                .stockStatus(StockStatus.IN_STOCK)
+                .activeStatus(ActiveStatus.ACTIVE);
 
         p3 = new Product()
                 .id(UUID.randomUUID().toString())
@@ -178,8 +178,8 @@ public class IntegrationTest {
                         "http://wwww.images.com/products/product3_2.jpg",
                         "http://wwww.images.com/products/product3_3.jpg"
                 ))
-                .stockStatus(ProductStockStatus.IN_STOCK)
-                .activeStatus(ProductActiveStatus.ACTIVE);
+                .stockStatus(StockStatus.IN_STOCK)
+                .activeStatus(ActiveStatus.ACTIVE);
 
         user1 = User.builder()
                 .id(UUID.randomUUID().toString())
@@ -307,8 +307,8 @@ public class IntegrationTest {
     }
 
     private void stub_getProductsByIds_returns200(List<Product> products) throws Exception {
-        List<ProductId> productIds = products.stream()
-                .map(p -> new ProductId().id(p.getId())).toList();
+        List<String> productIds = products.stream()
+                .map(p -> p.getId()).toList();
         productService.stubFor(com.github.tomakehurst.wiremock.client.WireMock
                 .post("/api/v1/products/batch")
                 .withRequestBody(equalToJson(objMapper.writeValueAsString(productIds)))
@@ -340,7 +340,7 @@ public class IntegrationTest {
     }
 
     @Test
-    void getMyCart_createsNewCartForUser_whenCartDoesntAlreadyExists() throws Exception {
+    void getCart_createsNewCartForUser_whenCartDoesntAlreadyExists() throws Exception {
         UUID userId = UUID.randomUUID();
         mvc.perform(get("/api/v1/cart")
                         .header("X-User-Id", userId.toString()))
@@ -350,14 +350,14 @@ public class IntegrationTest {
     }
 
     @Test
-    void getMyCart_returnsUpdatedCartItems_whenProductIsUpdated() throws Exception {
+    void getCart_returnsUpdatedCartItems_whenProductIsUpdated() throws Exception {
         UUID userId = UUID.randomUUID();
 
-        AddItemReq i1 = new AddItemReq()
+        ItemCreateRequest i1 = new ItemCreateRequest()
                 .productId(p1.getId())
                 .quantity(1);
 
-        AddItemReq i2 = new AddItemReq()
+        ItemCreateRequest i2 = new ItemCreateRequest()
                 .productId(p2.getId())
                 .quantity(2);
 
@@ -382,7 +382,7 @@ public class IntegrationTest {
 
         // check cart
         List<Product> products = List.of(p1, p2);
-        List<ProductId> productIds = products.stream().map(p -> new ProductId().id(p.getId())).toList();
+        List<String> productIds = products.stream().map(p -> p.getId()).toList();
         stub_getProductsByIds_returns200(products);
         MvcResult result = mvc.perform(get("/api/v1/cart")
                         .header("X-User-Id", userId.toString()))
@@ -411,7 +411,7 @@ public class IntegrationTest {
     }
 
     @Test
-    void getMyCart_pricesAreSavedCorrectly_afterProductUpdate() throws Exception {
+    void getCart_pricesAreSavedCorrectly_afterProductUpdate() throws Exception {
         stub_getProductsByIds_returns200(List.of(p1, p2, p3));
         String json = mvc.perform(get("/api/v1/cart")
                         .header("X-User-Id", user1.getId()))
@@ -437,15 +437,15 @@ public class IntegrationTest {
     }
 
     @Test
-    void addItemToCart_savesToDatabase() throws Exception {
+    void createCartItem_savesToDatabase() throws Exception {
         UUID userId = UUID.randomUUID();
 
         stub_getProductById_returns200(p1);
-        AddItemReq r1 = new AddItemReq()
+        ItemCreateRequest r1 = new ItemCreateRequest()
                 .productId(p1.getId())
                 .quantity(2);
 
-        AddItemReq r2 = new AddItemReq()
+        ItemCreateRequest r2 = new ItemCreateRequest()
                 .productId(p2.getId())
                 .quantity(2);
 
@@ -471,15 +471,15 @@ public class IntegrationTest {
     }
 
     @Test
-    void addItemToCart_savesCorrectPricesAndQuantity() throws Exception {
+    void createCartItem_savesCorrectPricesAndQuantity() throws Exception {
         UUID userId = UUID.randomUUID();
 
         stub_getProductById_returns200(p1);
-        AddItemReq r1 = new AddItemReq()
+        ItemCreateRequest r1 = new ItemCreateRequest()
                 .productId(p1.getId())
                 .quantity(2);
 
-        AddItemReq r2 = new AddItemReq()
+        ItemCreateRequest r2 = new ItemCreateRequest()
                 .productId(p2.getId())
                 .quantity(2);
 
@@ -508,10 +508,10 @@ public class IntegrationTest {
     }
 
     @Test
-    void addItemToCart_showsUpInCorrectUserCart() throws Exception {
+    void createCartItem_showsUpInCorrectUserCart() throws Exception {
         UUID userId = UUID.randomUUID();
 
-        AddItemReq req = new AddItemReq()
+        ItemCreateRequest req = new ItemCreateRequest()
                 .productId(p1.getId())
                 .quantity(1);
 
@@ -536,14 +536,14 @@ public class IntegrationTest {
     }
 
     @Test
-    void addItemToCart_returns400_whenProductIsOutOfStock() throws Exception {
+    void createCartItem_returns400_whenProductIsOutOfStock() throws Exception {
         UUID userId = UUID.randomUUID();
 
-        AddItemReq req = new AddItemReq()
+        ItemCreateRequest req = new ItemCreateRequest()
                 .productId(p1.getId())
                 .quantity(2);
 
-        p1.setStockStatus(ProductStockStatus.OUT_OF_STOCK);
+        p1.setStockStatus(StockStatus.OUT_OF_STOCK);
         stub_getProductById_returns200(p1);
         mvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -553,9 +553,9 @@ public class IntegrationTest {
     }
 
     @Test
-    void addItemToCart_returns404_whenProductNotFound() throws Exception {
+    void createCartItem_returns404_whenProductNotFound() throws Exception {
         UUID userId = UUID.randomUUID();
-        AddItemReq req = new AddItemReq()
+        ItemCreateRequest req = new ItemCreateRequest()
                 .productId(p1.getId())
                 .quantity(2);
 
@@ -568,7 +568,7 @@ public class IntegrationTest {
     }
 
     @Test
-    void clearMyCart_deletesAllItemsFromCart() throws Exception {
+    void clearCart_deletesAllItemsFromCart() throws Exception {
         mvc.perform(delete("/api/v1/cart")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("X-User-Id", user1.getId()))
@@ -583,7 +583,7 @@ public class IntegrationTest {
     }
 
     @Test
-    void removeItemFromCart_removesItemFromDatabase() throws Exception {
+    void removeCartItem_removesItemFromDatabase() throws Exception {
         mvc.perform(delete("/api/v1/cart/items/{id}", ce1.getItems().get(0).getId().toString())
                         .header("X-User-Id", user1.getId()))
                 .andExpect(status().isNoContent());
@@ -593,7 +593,7 @@ public class IntegrationTest {
 
     @Test
     void updateItemQuantity_savesCorrectValuesInDatabase() throws Exception {
-        UpdateItemQuantityReq req = new UpdateItemQuantityReq()
+        ItemQuantityUpdateRequest req = new ItemQuantityUpdateRequest()
                 .quantity(4);
 
         String json = mvc.perform(patch("/api/v1/cart/items/{id}", ce1.getItems().get(0).getId())
@@ -614,7 +614,7 @@ public class IntegrationTest {
 
     @Test
     void checkoutCart_sendsMessage() throws Exception {
-        CartCheckoutReq req = CartCheckoutReq.builder()
+        CartCheckoutRequest req = CartCheckoutRequest.builder()
                 .addressId(address1.getId())
                 // TODO: add card id
                 .cardId(UUID.randomUUID().toString())
@@ -650,7 +650,7 @@ public class IntegrationTest {
     @Test
     void checkoutCart_returns400_whenCartIsEmpty() throws Exception {
         UUID userId = UUID.randomUUID();
-        CartCheckoutReq req = CartCheckoutReq.builder()
+        CartCheckoutRequest req = CartCheckoutRequest.builder()
                 .addressId(address1.getId())
                 .cardId(UUID.randomUUID().toString())
                 .build();
@@ -664,7 +664,7 @@ public class IntegrationTest {
 
     @Test
     void checkoutCart_clearsCart() throws Exception {
-        CartCheckoutReq req = CartCheckoutReq.builder()
+        CartCheckoutRequest req = CartCheckoutRequest.builder()
                 .addressId(address1.getId())
                 .cardId(UUID.randomUUID().toString())
                 .build();

@@ -5,13 +5,13 @@ import xyz.peasfultown.ecommerce.cart_api.model.*;
 public interface CartService {
     Cart getCartByUserId(String userId);
 
-    CartItem addItemToCart(String userId, AddItemReq req);
+    CartItem addItemToCart(String userId, ItemCreateRequest req);
 
     void clearUserCart(String userId);
 
     void removeItemFromCart(String userId, String itemId);
 
-    CartItem updateCartItemQuantity(String userId, String itemId, UpdateItemQuantityReq req);
+    CartItem updateCartItemQuantity(String userId, String itemId, ItemQuantityUpdateRequest req);
 
-    void checkoutCart(String userId, CartCheckoutReq cartCheckoutReq);
+    void checkoutCart(String userId, CartCheckoutRequest cartCheckoutReq);
 }

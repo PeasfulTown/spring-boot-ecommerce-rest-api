@@ -1,7 +1,9 @@
 package xyz.peasfultown.ecommerce.cart_service.exception;
 
-public class ProductNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class ProductNotFoundException extends CustomErrorResponseException {
     public ProductNotFoundException(String productId) {
-        super(String.format("Product not foud by ID: %s", productId));
+        super(HttpStatus.NOT_FOUND, String.format("Product not found by ID: %s", productId));
     }
 }

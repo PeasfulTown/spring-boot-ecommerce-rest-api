@@ -1,7 +1,9 @@
 package xyz.peasfultown.ecommerce.cart_service.exception;
 
-public class CartCheckoutMessageException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class CartCheckoutMessageException extends CustomErrorResponseException {
     public CartCheckoutMessageException(String message) {
-        super(message);
+        super(HttpStatus.BAD_REQUEST, message);
     }
 }

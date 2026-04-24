@@ -1,7 +1,9 @@
 package xyz.peasfultown.ecommerce.cart_service.exception;
 
-public class ProductOutOfStockException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class ProductOutOfStockException extends CustomErrorResponseException {
     public ProductOutOfStockException(String id) {
-        super(String.format("Product out of stock ID: %s", id));
+        super(HttpStatus.BAD_REQUEST, String.format("Product out of stock ID: %s", id));
     }
 }

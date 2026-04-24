@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import xyz.peasfultown.ecommerce.cart_api.model.CartCheckoutReq;
+import xyz.peasfultown.ecommerce.cart_api.model.CartCheckoutRequest;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,7 +63,7 @@ public class RabbitMqConfig {
     public DefaultClassMapper classMapper() {
         DefaultClassMapper classMapper = new DefaultClassMapper();
         Map<String, Class<?>> idClassMapping = new HashMap<>();
-        idClassMapping.put("CartCheckoutReq", CartCheckoutReq.class);
+        idClassMapping.put("CartCheckoutReq", CartCheckoutRequest.class);
         classMapper.setIdClassMapping(idClassMapping);
         return classMapper;
     }

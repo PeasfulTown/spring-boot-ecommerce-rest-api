@@ -1,7 +1,9 @@
 package xyz.peasfultown.ecommerce.cart_service.exception;
 
-public class CartNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class CartNotFoundException extends CustomErrorResponseException {
     public CartNotFoundException(String message) {
-        super(message);
+        super(HttpStatus.NOT_FOUND, message);
     }
 }
