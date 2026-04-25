@@ -35,4 +35,9 @@ public class CartEntity {
             orphanRemoval = true
     )
     private List<CartItemEntity> items = new ArrayList<>();
+
+    public void addItems(List<CartItemEntity> items) {
+        items.forEach(i -> i.setCart(this));
+        this.getItems().addAll(items);
+    }
 }

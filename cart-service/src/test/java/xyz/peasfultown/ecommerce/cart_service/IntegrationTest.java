@@ -19,6 +19,7 @@ import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
 import xyz.peasfultown.ecommerce.cart_api.model.*;
+import xyz.peasfultown.ecommerce.cart_service.dto.BatchProductIdRequest;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartItemEntity;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartItemMapper;
@@ -88,13 +89,6 @@ public class IntegrationTest {
     @Autowired
     private RabbitTemplate rabbitTemplate;
 
-    private static RabbitAdmin rabbitAdmin;
-
-    @Autowired
-    private void setRabbitAdmin(RabbitAdmin rabbitAdmin) {
-        IntegrationTest.rabbitAdmin = rabbitAdmin;
-    }
-
     private UUID userId;
 
     private Product p1;
@@ -163,8 +157,8 @@ public class IntegrationTest {
                 .build();
         ce1 = CartEntity.builder()
                 .userId(userId)
-                .items(List.of(ci1, ci2, ci3))
                 .build();
+        ce1.addItems(List.of(ci1, ci2, ci3));
         ce1 = cartRepo.save(ce1);
     }
 
@@ -190,9 +184,10 @@ public class IntegrationTest {
     private void stub_getProductsByIds_returns200(List<Product> products) throws Exception {
         List<String> productIds = products.stream()
                 .map(p -> p.getId()).toList();
+        BatchProductIdRequest req = new BatchProductIdRequest(productIds);
         productService.stubFor(com.github.tomakehurst.wiremock.client.WireMock
                 .post("/api/v1/products/batch")
-                .withRequestBody(equalToJson(oMapper.writeValueAsString(productIds)))
+                .withRequestBody(equalToJson(oMapper.writeValueAsString(req)))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -241,7 +236,7 @@ public class IntegrationTest {
         Cart cart = oMapper.readValue(json, Cart.class);
 
         testCartItemsProductsEqual(cart, products);
-        assertEquals(BigDecimal.valueOf(234.99), cart.getTotalPrice());
+        assertEquals(BigDecimal.valueOf(495.96), cart.getTotalPrice());
     }
 
     @Test
@@ -353,7 +348,8 @@ public class IntegrationTest {
 
     @Test
     void checkoutCart_returns400_whenCartIsEmpty() throws Exception {
-        UUID userId = UUID.randomUUID();
+        ce1.getItems().clear();
+        cartRepo.save(ce1);
         CartCheckoutRequest req = CartCheckoutRequest.builder()
                 .addressId(UUID.randomUUID().toString())
                 .cardId(UUID.randomUUID().toString())

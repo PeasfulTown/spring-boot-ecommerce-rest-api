@@ -1,15 +1,10 @@
 package xyz.peasfultown.ecommerce.cart_service.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageBuilder;
-import org.springframework.amqp.core.MessagePropertiesBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.cart_api.model.*;
 import xyz.peasfultown.ecommerce.cart_service.client.ProductServiceClient;
-import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
 import xyz.peasfultown.ecommerce.cart_service.dto.BatchProductIdRequest;
 import xyz.peasfultown.ecommerce.cart_service.dto.OrderCreateMessage;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
@@ -21,7 +16,6 @@ import xyz.peasfultown.ecommerce.cart_service.messaging.MessagePublisher;
 import xyz.peasfultown.ecommerce.cart_service.repository.CartItemRepository;
 import xyz.peasfultown.ecommerce.cart_service.repository.CartRepository;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,21 +46,8 @@ public class CartServiceImpl implements CartService {
     @Override
     public Cart getCartByUserId(String userId) {
         CartEntity ce = getCartEntityByUserId(userId);
-        List<Product> cartItemProducts = getProductsByIds(
-                ce.getItems().stream().map(i ->
-                        i.getProductId().toString()).toList());
 
-        Map<String, Product> productMap = createProductMap(cartItemProducts);
-
-        // if the resulting list size of the get product call
-        // is less than the size of the items in the cart
-        // that means some items in the cart have been made
-        // unavailable or out of stock, in that case the cart
-        // items list will be updated to get rid of those items
-        if (ce.getItems().size() > cartItemProducts.size())
-            updateCartItemAndProductLinks(ce, productMap);
-
-        return mapper.toModel(ce, productMap);
+        return createCartModelWithProductInfo(ce);
     }
 
     @Override
@@ -116,7 +97,8 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new CartNotFoundException(String.format(
                         "Cart not found by user ID: %s", userId
                 )));
-        ciRepo.deleteAll(ce.getItems());
+        ce.getItems().clear();
+        repo.save(ce);
     }
 
     @Override
@@ -126,8 +108,13 @@ public class CartServiceImpl implements CartService {
                         "Cart not found by user ID: %s", userId
                 )));
 
-        CartItemEntity cie = ce.getItems().stream().filter(ci -> ci.getId().equals(UUID.fromString(itemId))).findFirst().get();
-        ciRepo.delete(cie);
+        ce.getItems().remove(ce.getItems().stream().filter(i ->
+            i.getId().equals(UUID.fromString(itemId)))
+            .findFirst().orElseThrow(() ->
+                new CartItemNotFoundException(String.format(
+                    "Cart item not found by ID: %s", itemId))));
+
+        repo.save(ce);
     }
 
     @Override
@@ -159,22 +146,28 @@ public class CartServiceImpl implements CartService {
 
     @Override
     public void checkoutCart(String userId, CartCheckoutRequest cartCheckoutReq) {
-        Cart cart = getCartByUserId(userId);
+        CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
+                .orElseThrow(() -> new CartNotFoundException(String.format(
+                        "Cart not found for user ID: %s", userId
+                )));
 
-        if (cart.getItems().isEmpty())
+        if (ce.getItems().isEmpty())
             throw new EmptyCartCheckoutException("Cannot checkout with an empty cart");
+
+        Cart cart = createCartModelWithProductInfo(ce);
 
         OrderCreateMessage orderCreateMessage = OrderCreateMessage.builder()
                 .userId(userId)
                 .cardId(cartCheckoutReq.getCardId())
                 .addressId(cartCheckoutReq.getAddressId())
+                .totalPrice(cart.getTotalPrice())
+                .itemCount(cart.getTotalItems())
                 .items(cart.getItems())
                 .build();
 
         messagePublisher.sendOrderCreateMessage(orderCreateMessage);
-
-        ciRepo.deleteAllByIdInBatch(cart.getItems().stream().map(i ->
-                UUID.fromString(i.getId())).toList());
+        ce.getItems().clear();
+        repo.save(ce);
     }
 
 
@@ -216,5 +209,24 @@ public class CartServiceImpl implements CartService {
                                 productMap.get(i.getProductId().toString())).isPresent())
                 .toList());
         repo.save(cartEntity);
+    }
+
+    private Cart createCartModelWithProductInfo(CartEntity cartEntity) {
+        if (!cartEntity.getItems().isEmpty()) {
+            List<Product> cartItemProducts = getProductsByIds(
+                    cartEntity.getItems().stream().map(i ->
+                            i.getProductId().toString()).toList());
+
+            Map<String, Product> productMap = createProductMap(cartItemProducts);
+
+            // if the resulting list size of the get product call
+            // is less than the size of the items in the cart
+            // that means some items in the cart have been made
+            // unavailable or out of stock, in that case the cart
+            // items list will be updated to get rid of those items
+            if (cartEntity.getItems().size() > cartItemProducts.size())
+                updateCartItemAndProductLinks(cartEntity, productMap);
+            return mapper.toModel(cartEntity, productMap);
+        } else return mapper.toModel(cartEntity);
     }
 }

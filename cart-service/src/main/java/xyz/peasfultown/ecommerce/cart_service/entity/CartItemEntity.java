@@ -31,6 +31,9 @@ public class CartItemEntity {
     private int quantity = 1;
 
     @ManyToOne
-    @JoinColumn(name = "cart_id")
+    @JoinColumn(
+        name = "cart_id",
+        referencedColumnName = "id"
+    )
     private CartEntity cart;
 }

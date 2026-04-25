@@ -17,6 +17,7 @@ import java.util.function.Function;
     uses = { CartItemMapper.class }
 )
 public interface CartMapper {
+    Cart toModel(CartEntity entity);
     Cart toModel(CartEntity entity, @Context Map<String, Product> productMap);
 
     @AfterMapping
