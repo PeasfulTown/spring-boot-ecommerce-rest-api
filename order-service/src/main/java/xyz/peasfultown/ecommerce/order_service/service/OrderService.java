@@ -4,7 +4,9 @@ import org.springframework.data.domain.Page;
 import xyz.peasfultown.ecommerce.order_api.model.Order;
 import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
 import xyz.peasfultown.ecommerce.order_api.model.OrderUpdateRequest;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderConfirmationMessage;
 import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
+import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 
 import java.util.List;
 
@@ -17,5 +19,7 @@ public interface OrderService {
 
     void updateOrderStatus(String orderId, OrderUpdateRequest updateRequest);
 
-    void createOrder(OrderCreateMessage message);
+    Order createOrder(OrderCreateMessage message);
+
+    void confirmOrder(OrderConfirmationMessage message);
 }

@@ -83,6 +83,30 @@ public class IntegrationTest {
         userId1 = UUID.randomUUID();
         userId2 = UUID.randomUUID();
 
+        o1_i1 = OrderItemEntity.builder()
+                .id(UUID.randomUUID())
+                .productId(UUID.randomUUID())
+                .productName("Product 1")
+                .productPrice(BigDecimal.valueOf(111.11))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(111.11))
+                .build();
+        o1_i2 = OrderItemEntity.builder()
+                .id(UUID.randomUUID())
+                .productId(UUID.randomUUID())
+                .productName("Product 2")
+                .productPrice(BigDecimal.valueOf(222.22))
+                .quantity(2)
+                .subtotal(BigDecimal.valueOf(444.44))
+                .build();
+        o1_i3 = OrderItemEntity.builder()
+                .id(UUID.randomUUID())
+                .productId(UUID.randomUUID())
+                .productName("Product 3")
+                .productPrice(BigDecimal.valueOf(333.33))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(333.33))
+                .build();
         order1 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId1)
@@ -97,36 +121,24 @@ public class IntegrationTest {
                 .status(OrderEntity.OrderStatus.PROCESSING)
                 .totalPrice(BigDecimal.valueOf(888.88))
                 .build();
-        o1_i1 = OrderItemEntity.builder()
+        order1.addItems(List.of(o1_i1, o1_i2, o1_i3));
+
+        o2_i1 = OrderItemEntity.builder()
                 .id(UUID.randomUUID())
-                .order(order1)
                 .productId(UUID.randomUUID())
                 .productName("Product 1")
-                .productPrice(BigDecimal.valueOf(111.11))
+                .productPrice(BigDecimal.valueOf(444.44))
                 .quantity(1)
-                .subtotal(BigDecimal.valueOf(111.11))
-                .build();
-        o1_i2 = OrderItemEntity.builder()
-                .id(UUID.randomUUID())
-                .order(order1)
-                .productId(UUID.randomUUID())
-                .productName("Product 2")
-                .productPrice(BigDecimal.valueOf(222.22))
-                .quantity(2)
                 .subtotal(BigDecimal.valueOf(444.44))
                 .build();
-        o1_i3 = OrderItemEntity.builder()
+        o2_i2 = OrderItemEntity.builder()
                 .id(UUID.randomUUID())
-                .order(order1)
-                .order(order1)
                 .productId(UUID.randomUUID())
-                .productName("Product 3")
-                .productPrice(BigDecimal.valueOf(333.33))
+                .productName("Product 2")
+                .productPrice(BigDecimal.valueOf(555.55))
                 .quantity(1)
-                .subtotal(BigDecimal.valueOf(333.33))
+                .subtotal(BigDecimal.valueOf(555.55))
                 .build();
-        oiRepo.saveAll(List.of(o1_i1, o1_i2, o1_i3));
-
         order2 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId1)
@@ -141,26 +153,24 @@ public class IntegrationTest {
                 .totalPrice(BigDecimal.valueOf(999.99))
                 .status(OrderEntity.OrderStatus.PROCESSING)
                 .build();
-        o2_i1 = OrderItemEntity.builder()
+        order2.addItems(List.of(o2_i1, o2_i2));
+
+        o3_i1 = OrderItemEntity.builder()
                 .id(UUID.randomUUID())
-                .order(order2)
                 .productId(UUID.randomUUID())
                 .productName("Product 1")
                 .productPrice(BigDecimal.valueOf(444.44))
                 .quantity(1)
                 .subtotal(BigDecimal.valueOf(444.44))
                 .build();
-        o2_i2 = OrderItemEntity.builder()
+        o3_i2 = OrderItemEntity.builder()
                 .id(UUID.randomUUID())
-                .order(order2)
                 .productId(UUID.randomUUID())
                 .productName("Product 2")
                 .productPrice(BigDecimal.valueOf(555.55))
                 .quantity(1)
                 .subtotal(BigDecimal.valueOf(555.55))
                 .build();
-        oiRepo.saveAll(List.of(o2_i1, o2_i2));
-
         order3 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId1)
@@ -175,26 +185,24 @@ public class IntegrationTest {
                 .totalPrice(BigDecimal.valueOf(999.99))
                 .status(OrderEntity.OrderStatus.PROCESSING)
                 .build();
-        o3_i1 = OrderItemEntity.builder()
+        order3.addItems(List.of(o3_i1, o3_i2));
+
+        o4_i1 = OrderItemEntity.builder()
                 .id(UUID.randomUUID())
-                .order(order3)
                 .productId(UUID.randomUUID())
                 .productName("Product 1")
                 .productPrice(BigDecimal.valueOf(444.44))
                 .quantity(1)
                 .subtotal(BigDecimal.valueOf(444.44))
                 .build();
-        o3_i2 = OrderItemEntity.builder()
+        o4_i2 = OrderItemEntity.builder()
                 .id(UUID.randomUUID())
-                .order(order3)
                 .productId(UUID.randomUUID())
                 .productName("Product 2")
                 .productPrice(BigDecimal.valueOf(555.55))
                 .quantity(1)
                 .subtotal(BigDecimal.valueOf(555.55))
                 .build();
-        oiRepo.saveAll(List.of(o3_i1, o3_i2));
-
         order4 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId2)
@@ -209,25 +217,9 @@ public class IntegrationTest {
                 .totalPrice(BigDecimal.valueOf(999.99))
                 .status(OrderEntity.OrderStatus.PROCESSING)
                 .build();
-        o4_i1 = OrderItemEntity.builder()
-                .id(UUID.randomUUID())
-                .order(order4)
-                .productId(UUID.randomUUID())
-                .productName("Product 1")
-                .productPrice(BigDecimal.valueOf(444.44))
-                .quantity(1)
-                .subtotal(BigDecimal.valueOf(444.44))
-                .build();
-        o4_i2 = OrderItemEntity.builder()
-                .id(UUID.randomUUID())
-                .order(order4)
-                .productId(UUID.randomUUID())
-                .productName("Product 2")
-                .productPrice(BigDecimal.valueOf(555.55))
-                .quantity(1)
-                .subtotal(BigDecimal.valueOf(555.55))
-                .build();
-        oiRepo.saveAll(List.of(o4_i1, o4_i2));
+        order4.addItems(List.of(o4_i1, o4_i2));
+
+        orderRepo.saveAll(List.of(order1, order2, order3, order4));
 
         assertTrue(orderRepo.count() == 4);
     }

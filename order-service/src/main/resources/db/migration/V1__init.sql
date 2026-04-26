@@ -1,6 +1,7 @@
 create table if not exists `order` (
     id varchar(36) not null,
     user_id varchar(36) not null,
+    fullname varchar(50) not null,
     email varchar(50) not null,
     phone varchar(10) not null,
     street_number varchar(10) not null,
@@ -13,6 +14,8 @@ create table if not exists `order` (
     item_count int unsigned not null,
     status enum("PROCESSING", "CONFIRMED", "SHIPPED",
     "OUT_FOR_DELIVERY", "COMPLETED", "CANCELLED") not null,
+    payment_id varchar(36),
+    paid_at timestamp,
     primary key (id)
 );
 

@@ -14,6 +14,8 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderConfirmationMessage;
+import xyz.peasfultown.ecommerce.order_service.dto.PaymentConfirmationMessage;
 import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
 
 import java.util.HashMap;
@@ -48,9 +50,31 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Binding cart_checkout_order_createOrder_routingKey(Queue order_createOrder_queue,
-                                                              TopicExchange exchange) {
+    public Queue order_confirmOrder_queue() {
+        return new Queue(RabbitMqConstants.order_confirmOrder_queue);
+    }
+
+    @Bean
+    public Queue payment_confirmPayment_queue() {
+        return new Queue(RabbitMqConstants.payment_confirmPayment_queue);
+    }
+
+    @Bean
+    public Binding cart_checkout_order_createOrder_binding(Queue order_createOrder_queue,
+                                                           TopicExchange exchange) {
         return BindingBuilder.bind(order_createOrder_queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_createOrder_routingKey);
+    }
+
+    @Bean
+    public Binding cart_checkout_order_confirmOrder_binding(Queue order_confirmOrder_queue,
+                                                            TopicExchange exchange) {
+        return BindingBuilder.bind(order_confirmOrder_queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_confirmOrder_routingKey);
+    }
+
+    @Bean
+    public Binding cart_checkout_payment_confirmPayment_binding(Queue payment_confirmPayment_queue,
+    TopicExchange exchange) {
+        return BindingBuilder.bind(payment_confirmPayment_queue).to(exchange).with(RabbitMqConstants.cart_checkout_payment_confirmPayment_routingKey);
     }
 
     @Bean
@@ -65,6 +89,8 @@ public class RabbitMqConfig {
         DefaultClassMapper classMapper = new DefaultClassMapper();
         Map<String, Class<?>> idClassMap = new HashMap<>();
         idClassMap.put("OrderCreateMessage", OrderCreateMessage.class);
+        idClassMap.put("CardIdMessage", PaymentConfirmationMessage.class);
+        idClassMap.put("OrderConfirmationMessage", OrderConfirmationMessage.class);
         classMapper.setIdClassMapping(idClassMap);
         return classMapper;
     }
