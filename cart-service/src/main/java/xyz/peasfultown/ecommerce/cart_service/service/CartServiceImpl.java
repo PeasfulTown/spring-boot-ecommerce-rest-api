@@ -85,7 +85,8 @@ public class CartServiceImpl implements CartService {
                     .quantity(req.getQuantity())
                     .build();
         }
-        cie = ciRepo.save(cie);
+        ce.addItem(cie);
+        repo.save(ce);
         return ciMapper.toModel(cie, product);
     }
 

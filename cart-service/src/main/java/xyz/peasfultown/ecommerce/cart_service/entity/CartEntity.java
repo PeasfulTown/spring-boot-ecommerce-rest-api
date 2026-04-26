@@ -40,4 +40,9 @@ public class CartEntity {
         items.forEach(i -> i.setCart(this));
         this.getItems().addAll(items);
     }
+
+    public void addItem(CartItemEntity item) {
+        item.setCart(this);
+        this.getItems().add(item);
+    }
 }

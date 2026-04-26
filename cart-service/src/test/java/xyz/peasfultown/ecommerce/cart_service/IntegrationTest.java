@@ -283,8 +283,12 @@ public class IntegrationTest {
                 ;
 
         CartEntity ce = cartRepo.findCartByUserId(userId).get();
-        assertThat(ciRepo.findCartItemByCartIdAndProductId(ce.getId(), UUID.fromString(p1.getId()))).isPresent();
-        assertThat(ciRepo.findCartItemByCartIdAndProductId(ce.getId(), UUID.fromString(p2.getId()))).isPresent();
+
+        Map<UUID, CartItemEntity> cartItemEntityMap = ce.getItems().stream()
+            .collect(Collectors.toMap(CartItemEntity::getProductId, Function.identity()));
+
+        assertEquals(req1.getQuantity(), cartItemEntityMap.get(UUID.fromString(req1.getProductId())).getQuantity());
+        assertEquals(req2.getQuantity(), cartItemEntityMap.get(UUID.fromString(req2.getProductId())).getQuantity());
     }
 
 

@@ -26,6 +26,7 @@ spring:
       default-exchange: ${RABBITMQ_DEFAULT_EXCHANGE}
 
 services:
+  internal-secret: ${SERVICES_INTERNAL_SECRET}
   product-service:
     url: ${PRODUCT_SERVICE_URL}
   user-service:
