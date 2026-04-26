@@ -41,12 +41,12 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Import(TestcontainersConfiguration.class)
 @EnableWireMock(
@@ -164,7 +164,7 @@ public class AsyncServiceFunctionTest {
         List<OrderItemEntity> ois = oiRepo.findOrderItemsByOrderId(oe.getId());
         assertEquals(2, ois.size());
         Map<UUID, OrderItemEntity> orderItemMap = ois.stream().collect(Collectors.toMap(
-            OrderItemEntity::getProductId, Function.identity()));
+                OrderItemEntity::getProductId, Function.identity()));
 
         orderMessage.getItems().forEach(i -> {
             OrderItemEntity oie = Optional.ofNullable(orderItemMap.get(UUID.fromString(i.getProductId()))).orElseThrow();
@@ -224,7 +224,8 @@ public class AsyncServiceFunctionTest {
         rabbitTemplate.send(RabbitMqConstants.cart_checkout_order_createOrder_routingKey, message);
 
         PaymentConfirmationMessage sentMessage = rabbitTemplate.receiveAndConvert(RabbitMqConstants.payment_confirmPayment_queue,
-                10_000, new ParameterizedTypeReference<PaymentConfirmationMessage>() {});
+                10_000, new ParameterizedTypeReference<PaymentConfirmationMessage>() {
+                });
 
         assertNotNull(sentMessage);
         OrderEntity oe = orderRepo.findAll().get(0);
@@ -273,20 +274,151 @@ public class AsyncServiceFunctionTest {
         oe.addItems(List.of(oie1, oie2, oie3));
         orderRepo.save(oe);
 
-        OrderConfirmationMessage ocm = new OrderConfirmationMessage(oe.getId().toString(), UUID.randomUUID().toString(), OffsetDateTime.now());
+        OrderConfirmationMessage ocm = OrderConfirmationMessage.builder()
+                .orderId(oe.getId().toString())
+                .paymentId(UUID.randomUUID().toString())
+                .paidAt(OffsetDateTime.now()).build();
         Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(ocm))
-                        .setHeader("__TypeId__", OrderConfirmationMessage.class.getSimpleName())
-                                .setContentType(MessageProperties.CONTENT_TYPE_JSON).build();
+                .setHeader("__TypeId__", OrderConfirmationMessage.class.getSimpleName())
+                .setContentType(MessageProperties.CONTENT_TYPE_JSON).build();
 
         rabbitTemplate.send(RabbitMqConstants.cart_checkout_order_confirmOrder_routingKey, message);
         await().atMost(10, TimeUnit.SECONDS)
                 .pollDelay(2, TimeUnit.SECONDS)
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .until(() -> orderRepo.findById(UUID.fromString(ocm.getOrderId())).orElseThrow()
-                            .getStatus() == OrderEntity.OrderStatus.CONFIRMED);
+                        .getStatus() == OrderEntity.OrderStatus.CONFIRMED);
 
         oe = orderRepo.findById(UUID.fromString(ocm.getOrderId())).orElseThrow();
         assertNotNull(oe.getPaidAt());
         assertEquals(ocm.getPaymentId(), oe.getPaymentId().toString());
+    }
+
+    @Test
+    void consumeOrderCancellationMessage_savesInDb() throws Exception {
+        OrderItemEntity oie1 = OrderItemEntity.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product 1")
+                .productPrice(BigDecimal.valueOf(111.11))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(111.11))
+                .build();
+        OrderItemEntity oie2 = OrderItemEntity.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product 2")
+                .productPrice(BigDecimal.valueOf(222.22))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(222.22))
+                .build();
+        OrderItemEntity oie3 = OrderItemEntity.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product 3")
+                .productPrice(BigDecimal.valueOf(333.33))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(333.33))
+                .build();
+        OrderEntity oe = OrderEntity.builder()
+                .userId(UUID.randomUUID())
+                .fullName("Full Name")
+                .email("example1@email.com")
+                .phone("1234567891")
+                .streetNumber("234")
+                .streetName("Street St")
+                .city("City")
+                .state("State")
+                .country("Country")
+                .postalCode("124ABC")
+                .totalPrice(BigDecimal.valueOf(666.66))
+                .itemCount(3)
+                .status(OrderEntity.OrderStatus.PROCESSING)
+                .build();
+        oe.addItems(List.of(oie1, oie2, oie3));
+        orderRepo.save(oe);
+
+        OrderCancellationMessage ocm = new OrderCancellationMessage(oe.getId().toString());
+        Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(ocm))
+                .setHeader("__TypeId__", OrderCancellationMessage.class.getSimpleName())
+                .setContentType(MessageProperties.CONTENT_TYPE_JSON).build();
+
+        rabbitTemplate.send(RabbitMqConstants.cart_checkout_order_cancelOrder_routingKey, message);
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollDelay(2, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(() -> orderRepo.findById(UUID.fromString(ocm.getOrderId())).orElseThrow()
+                        .getStatus() == OrderEntity.OrderStatus.CANCELLED);
+
+        oe = orderRepo.findById(UUID.fromString(ocm.getOrderId())).orElseThrow();
+        assertNull(oe.getPaidAt());
+        assertNull(oe.getPaymentId());
+    }
+
+    @Test
+    void consumeOrderConfirmationMessage_sendsCorrectProductStockUpdateMessage() throws Exception {
+        OrderItemEntity oie1 = OrderItemEntity.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product 1")
+                .productPrice(BigDecimal.valueOf(111.11))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(111.11))
+                .build();
+        OrderItemEntity oie2 = OrderItemEntity.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product 2")
+                .productPrice(BigDecimal.valueOf(222.22))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(222.22))
+                .build();
+        OrderItemEntity oie3 = OrderItemEntity.builder()
+                .productId(UUID.randomUUID())
+                .productName("Product 3")
+                .productPrice(BigDecimal.valueOf(333.33))
+                .quantity(1)
+                .subtotal(BigDecimal.valueOf(333.33))
+                .build();
+        OrderEntity oe = OrderEntity.builder()
+                .userId(UUID.randomUUID())
+                .fullName("Full Name")
+                .email("example1@email.com")
+                .phone("1234567891")
+                .streetNumber("234")
+                .streetName("Street St")
+                .city("City")
+                .state("State")
+                .country("Country")
+                .postalCode("124ABC")
+                .totalPrice(BigDecimal.valueOf(666.66))
+                .itemCount(3)
+                .status(OrderEntity.OrderStatus.PROCESSING)
+                .build();
+        oe.addItems(List.of(oie1, oie2, oie3));
+        orderRepo.save(oe);
+
+        OrderConfirmationMessage ocm = OrderConfirmationMessage.builder()
+                .orderId(oe.getId().toString())
+                .paymentId(UUID.randomUUID().toString())
+                .paidAt(OffsetDateTime.now()).build();
+
+        Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(ocm))
+                .setHeader("__TypeId__", OrderConfirmationMessage.class.getSimpleName())
+                .setContentType(MessageProperties.CONTENT_TYPE_JSON).build();
+        rabbitTemplate.send(RabbitMqConstants.cart_checkout_order_confirmOrder_routingKey, message);
+        await().atMost(10, TimeUnit.SECONDS)
+                .pollDelay(2, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .until(() -> orderRepo.findById(UUID.fromString(ocm.getOrderId())).orElseThrow()
+                        .getStatus() == OrderEntity.OrderStatus.CONFIRMED);
+
+        ProductStockUpdateMessage messageSentByService = rabbitTemplate.receiveAndConvert(RabbitMqConstants.product_updateStock_queue,
+                10_000,
+                new ParameterizedTypeReference<ProductStockUpdateMessage>() {});
+
+        Map<String, Integer> expectedResults = Stream.of(oie1, oie2, oie3).collect(
+                Collectors.toMap(o -> o.getProductId().toString(),
+                        OrderItemEntity::getQuantity));
+
+        expectedResults.forEach((k, v) -> {
+            int sentValue = Optional.ofNullable(messageSentByService.getProductIdStockMap().get(k)).orElseThrow();
+            assertEquals(v, sentValue);
+        });
     }
 }

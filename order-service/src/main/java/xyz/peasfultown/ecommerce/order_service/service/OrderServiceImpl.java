@@ -14,10 +14,7 @@ import xyz.peasfultown.ecommerce.order_api.model.Order;
 import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
 import xyz.peasfultown.ecommerce.order_api.model.OrderUpdateRequest;
 import xyz.peasfultown.ecommerce.order_service.client.UserServiceClient;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderConfirmationMessage;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderInformation;
-import xyz.peasfultown.ecommerce.order_service.dto.UserIdAndAddressIdRequest;
+import xyz.peasfultown.ecommerce.order_service.dto.*;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderItemEntity;
 import xyz.peasfultown.ecommerce.order_service.exception.CustomErrorResponseException;
@@ -156,6 +153,17 @@ public class OrderServiceImpl implements OrderService {
         oe.setPaymentId(UUID.fromString(message.getPaymentId()));
         oe.setPaidAt(message.getPaidAt().toInstant());
 
+        repo.save(oe);
+    }
+
+    @Override
+    public void cancelOrder(OrderCancellationMessage message) {
+        OrderEntity oe = repo.findById(UUID.fromString(message.getOrderId()))
+                .orElseThrow(() -> new OrderNotFoundException(String.format(
+                        "Unable to cancel order, order not found by ID: %s", message.getOrderId()
+                )));
+
+        oe.setStatus(OrderEntity.OrderStatus.CANCELLED);
         repo.save(oe);
     }
 }

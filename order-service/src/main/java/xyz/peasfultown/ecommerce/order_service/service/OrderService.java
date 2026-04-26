@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import xyz.peasfultown.ecommerce.order_api.model.Order;
 import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
 import xyz.peasfultown.ecommerce.order_api.model.OrderUpdateRequest;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderCancellationMessage;
 import xyz.peasfultown.ecommerce.order_service.dto.OrderConfirmationMessage;
 import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
@@ -22,4 +23,6 @@ public interface OrderService {
     Order createOrder(OrderCreateMessage message);
 
     void confirmOrder(OrderConfirmationMessage message);
+
+    void cancelOrder(OrderCancellationMessage message);
 }
