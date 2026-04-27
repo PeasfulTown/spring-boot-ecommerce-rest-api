@@ -47,7 +47,7 @@ public class CartServiceImpl implements CartService {
     public Cart getCartByUserId(String userId) {
         CartEntity ce = getCartEntityByUserId(userId);
 
-        return createCartModelWithProductInfo(ce);
+        return getProductInfoAndCreateCartModel(ce);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class CartServiceImpl implements CartService {
         }
 
         // if product not active or out of stock, throw exception
-        if (product.getStockStatus().equals(StockStatus.OUT_OF_STOCK))
+        if (product.getStock() == 0)
             throw new ProductOutOfStockException(product.getId());
 
         if (product.getActiveStatus().equals(ActiveStatus.INACTIVE))
@@ -155,7 +155,7 @@ public class CartServiceImpl implements CartService {
         if (ce.getItems().isEmpty())
             throw new EmptyCartCheckoutException("Cannot checkout with an empty cart");
 
-        Cart cart = createCartModelWithProductInfo(ce);
+        Cart cart = getProductInfoAndCreateCartModel(ce);
 
         OrderCreateMessage orderCreateMessage = OrderCreateMessage.builder()
                 .userId(userId)
@@ -193,11 +193,11 @@ public class CartServiceImpl implements CartService {
     }
 
     private List<Product> getProductsByIds(List<String> productIds) {
-        // TODO: maybe add checks for products that were made inactive/out of stock
         ResponseEntity<List<Product>> res = prodClient.getProductsByIds(new BatchProductIdRequest(productIds));
         List<Product> products = res.getBody();
 
-        return products;
+        return products.stream().filter(p -> p.getActiveStatus().equals(ActiveStatus.ACTIVE))
+                .filter(p -> p.getStock() > 0).toList();
     }
 
     private Map<String, Product> createProductMap(List<Product> products) {
@@ -205,29 +205,42 @@ public class CartServiceImpl implements CartService {
     }
 
     private void updateCartItemAndProductLinks(CartEntity cartEntity, Map<String, Product> productMap) {
-        cartEntity.setItems(cartEntity.getItems().stream().filter(i ->
-                        Optional.ofNullable(
-                                productMap.get(i.getProductId().toString())).isPresent())
-                .toList());
+        // using streams to first filter out items that do not exist in the product map (item
+        // that was removed from the product database) then filter out items that are out of
+        // stock
+        List<CartItemEntity> itemsToRemove = cartEntity.getItems().stream()
+            .filter(i -> {
+                Optional<Product> p = Optional.ofNullable(productMap.get(i.getProductId().toString()));
+                if (p.isPresent()) {
+                    if (p.get().getStock() == 0) return true;
+                    if (p.get().getActiveStatus().equals(ActiveStatus.INACTIVE)) return true;
+                    else {
+                        if (i.getQuantity() > p.get().getStock()) {
+                            i.setQuantity(p.get().getStock());
+                        }
+                        return false;
+                    }
+                } else {
+                    return true;
+                }
+            }).toList();
+        cartEntity.getItems().removeAll(itemsToRemove);
         repo.save(cartEntity);
     }
 
-    private Cart createCartModelWithProductInfo(CartEntity cartEntity) {
-        if (!cartEntity.getItems().isEmpty()) {
-            List<Product> cartItemProducts = getProductsByIds(
-                    cartEntity.getItems().stream().map(i ->
-                            i.getProductId().toString()).toList());
+    private Cart getProductInfoAndCreateCartModel(CartEntity cartEntity) {
+        if (cartEntity.getItems().isEmpty()) return mapper.toModel(cartEntity);
 
-            Map<String, Product> productMap = createProductMap(cartItemProducts);
+        List<Product> cartItemProducts = getProductsByIds(
+                cartEntity.getItems().stream().map(i ->
+                        i.getProductId().toString()).toList());
 
-            // if the resulting list size of the get product call
-            // is less than the size of the items in the cart
-            // that means some items in the cart have been made
-            // unavailable or out of stock, in that case the cart
-            // items list will be updated to get rid of those items
-            if (cartEntity.getItems().size() > cartItemProducts.size())
-                updateCartItemAndProductLinks(cartEntity, productMap);
-            return mapper.toModel(cartEntity, productMap);
-        } else return mapper.toModel(cartEntity);
+        Map<String, Product> productMap = createProductMap(cartItemProducts);
+        // update cart item and product links to remove unavailable/out of stock
+        // items and items with not enough stock
+        updateCartItemAndProductLinks(cartEntity, productMap);
+
+        if (cartEntity.getItems().isEmpty()) return mapper.toModel(cartEntity);
+        else return mapper.toModel(cartEntity, productMap);
     }
 }

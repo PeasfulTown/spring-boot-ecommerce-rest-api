@@ -230,13 +230,6 @@ components:
         subtotal:
           type: BigDecimal
 
-    StockStatus:
-      type: string
-      enum:
-        - IN_STOCK
-        - OUT_OF_STOCK
-        - LOW_STOCK
-
     ActiveStatus:
       type: string
       enum:
@@ -245,7 +238,7 @@ components:
 
     Product:
       type: object
-      required: [ id, name, description, imageUrls, stockStatus, activeStatus ]
+      required: [ id, name, description, imageUrls, activeStatus ]
       description: The product object
       properties:
         id:
@@ -260,8 +253,9 @@ components:
           type: array
           items:
             type: string
-        stockStatus:
-          $ref: '#/components/schemas/StockStatus'
+        stock:
+          type: integer
+          format: int32
         activeStatus:
           $ref: '#/components/schemas/ActiveStatus'
 

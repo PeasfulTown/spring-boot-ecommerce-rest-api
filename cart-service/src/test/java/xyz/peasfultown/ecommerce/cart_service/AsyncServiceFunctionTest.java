@@ -81,6 +81,7 @@ public class AsyncServiceFunctionTest {
 
     @BeforeEach
     void setup() {
+        // TODO: reset the stock thingies hahah
         p1 = new Product()
                 .id(UUID.randomUUID().toString())
                 .name("Product 1")
@@ -91,7 +92,6 @@ public class AsyncServiceFunctionTest {
                         "http://wwww.images.com/products/product1_2.jpg",
                         "http://wwww.images.com/products/product1_3.jpg"
                 ))
-                .stockStatus(StockStatus.IN_STOCK)
                 .activeStatus(ActiveStatus.ACTIVE);
 
         p2 = new Product()
@@ -104,7 +104,6 @@ public class AsyncServiceFunctionTest {
                         "http://wwww.images.com/products/product2_2.jpg",
                         "http://wwww.images.com/products/product2_3.jpg"
                 ))
-                .stockStatus(StockStatus.IN_STOCK)
                 .activeStatus(ActiveStatus.ACTIVE);
 
         p3 = new Product()
@@ -117,7 +116,6 @@ public class AsyncServiceFunctionTest {
                         "http://wwww.images.com/products/product3_2.jpg",
                         "http://wwww.images.com/products/product3_3.jpg"
                 ))
-                .stockStatus(StockStatus.IN_STOCK)
                 .activeStatus(ActiveStatus.ACTIVE);
 
     }

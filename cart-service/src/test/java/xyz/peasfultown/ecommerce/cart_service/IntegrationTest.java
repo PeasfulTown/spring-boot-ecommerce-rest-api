@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.rabbit.core.RabbitAdmin;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -38,8 +37,8 @@ import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -114,7 +113,7 @@ public class IntegrationTest {
                         "http://wwww.images.com/products/product1_2.jpg",
                         "http://wwww.images.com/products/product1_3.jpg"
                 ))
-                .stockStatus(StockStatus.IN_STOCK)
+                .stock(50)
                 .activeStatus(ActiveStatus.ACTIVE);
 
         p2 = new Product()
@@ -127,7 +126,7 @@ public class IntegrationTest {
                         "http://wwww.images.com/products/product2_2.jpg",
                         "http://wwww.images.com/products/product2_3.jpg"
                 ))
-                .stockStatus(StockStatus.IN_STOCK)
+                .stock(50)
                 .activeStatus(ActiveStatus.ACTIVE);
 
         p3 = new Product()
@@ -140,12 +139,12 @@ public class IntegrationTest {
                         "http://wwww.images.com/products/product3_2.jpg",
                         "http://wwww.images.com/products/product3_3.jpg"
                 ))
-                .stockStatus(StockStatus.IN_STOCK)
+                .stock(50)
                 .activeStatus(ActiveStatus.ACTIVE);
 
         ci1 = CartItemEntity.builder()
                 .productId(UUID.fromString(p1.getId()))
-                .quantity(1)
+                .quantity(10)
                 .build();
         ci2 = CartItemEntity.builder()
                 .productId(UUID.fromString(p2.getId()))
@@ -236,12 +235,36 @@ public class IntegrationTest {
         Cart cart = oMapper.readValue(json, Cart.class);
 
         testCartItemsProductsEqual(cart, products);
-        assertEquals(BigDecimal.valueOf(495.96), cart.getTotalPrice());
+        assertEquals(BigDecimal.valueOf(612.87), cart.getTotalPrice());
     }
 
     @Test
     void getCart_returnsCorrectItems_whenAProductGoesOutOfStock() throws Exception {
-        fail();
+        p1.setStock(0);
+        stub_getProductsByIds_returns200(List.of(p1, p2, p3));
+        mvc.perform(get("/api/v1/cart")
+                .header("X-User-Id", userId.toString()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.items", hasSize(2)));
+
+        List<CartItemEntity> cies = ciRepo.findCartItemsByUserId(userId);
+        assertEquals(2, cies.size());
+        assertTrue(cies.stream().filter(i -> i.getProductId().toString().equals(p1.getId())).findAny().isEmpty());
+        assertThat(ciRepo.findCartItemByCartIdAndProductId(ce1.getId(), UUID.fromString(p1.getId()))).isEmpty();
+    }
+
+    @Test
+    void getCart_returnsCorrectItems_whenAProductHasLessStockThanCartItemQuantity() throws Exception {
+        p1.setStock(2);
+        stub_getProductsByIds_returns200(List.of(p1, p2, p3));
+
+        mvc.perform(get("/api/v1/cart")
+                .header("X-User-Id", userId.toString()))
+                .andExpect(status().isOk());
+
+        CartItemEntity cie = ciRepo.findCartItemByUserIdAndProductId(userId, UUID.fromString(p1.getId()))
+                .orElseThrow();
+        assertEquals(2, cie.getQuantity());
     }
 
     @Test
@@ -300,7 +323,7 @@ public class IntegrationTest {
                 .productId(p1.getId())
                 .quantity(2);
 
-        p1.setStockStatus(StockStatus.OUT_OF_STOCK);
+        p1.setStock(0);
         stub_getProductById_returns200(p1);
         mvc.perform(post("/api/v1/cart/items")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -384,4 +407,5 @@ public class IntegrationTest {
         assertThat(cartRepo.findCartByUserId(userId).orElseThrow().getItems()).isEmpty();
         assertThat(ciRepo.findCartItemsByCartId(ce1.getId())).isEmpty();
     }
+
 }
