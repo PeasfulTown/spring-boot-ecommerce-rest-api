@@ -16,13 +16,13 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class RefreshTokenEntity {
+    @Builder.Default
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, length = 36, updatable = false)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "account_id", nullable = false)
     private AccountEntity account;
 
