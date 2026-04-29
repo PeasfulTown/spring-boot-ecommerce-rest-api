@@ -12,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.wiremock.spring.ConfigureWireMock;
+import org.wiremock.spring.EnableWireMock;
 import xyz.peasfultown.ecommerce.order_api.model.Order;
 import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
 import xyz.peasfultown.ecommerce.order_api.model.OrderUpdateRequest;
@@ -37,6 +39,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @Import(TestcontainersConfiguration.class)
 @AutoConfigureMockMvc
+@EnableWireMock(
+    @ConfigureWireMock(
+            name = "user-sevice",
+            baseUrlProperties = "USER_SERVICE_URL",
+            portProperties = "user-service.port"
+    )
+)
 @ActiveProfiles("test")
 @SpringBootTest
 @Transactional
@@ -110,6 +119,7 @@ public class IntegrationTest {
         order1 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId1)
+                .fullName("Full Name 1")
                 .email("example1@email.com")
                 .phone("1234567890")
                 .streetNumber("123")
@@ -142,6 +152,7 @@ public class IntegrationTest {
         order2 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId1)
+                .fullName("Full Name 1")
                 .email("example1@email.com")
                 .phone("1234567891")
                 .streetNumber("234")
@@ -174,6 +185,7 @@ public class IntegrationTest {
         order3 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId1)
+                .fullName("Full Name 1")
                 .email("example1@email.com")
                 .phone("1234567891")
                 .streetNumber("234")
@@ -206,6 +218,7 @@ public class IntegrationTest {
         order4 = OrderEntity.builder()
                 .id(UUID.randomUUID())
                 .userId(userId2)
+                .fullName("Full Name 1")
                 .email("example1@email.com")
                 .phone("1234567891")
                 .streetNumber("234")

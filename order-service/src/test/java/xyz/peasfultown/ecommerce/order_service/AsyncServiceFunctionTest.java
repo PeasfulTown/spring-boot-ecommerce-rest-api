@@ -28,12 +28,7 @@ import xyz.peasfultown.ecommerce.order_service.repository.OrderItemRepository;
 import xyz.peasfultown.ecommerce.order_service.repository.OrderRepository;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -78,7 +73,7 @@ public class AsyncServiceFunctionTest {
     @Autowired
     private RabbitAdmin rabbitAdmin;
 
-    void stub_getUserInformationAndAddress_returns200(UserIdAndAddressIdRequest req, OrderInformation userInfo) throws Exception {
+    void stub_getUserInformationAndAddress_returns200(OrderInformationRequest req, OrderInformation userInfo) throws Exception {
         userService.stubFor(WireMock.post(urlPathTemplate("/api/v1/users/order-info"))
                 .withRequestBody(equalToJson(oMapper.writeValueAsString(req)))
                 .willReturn(aResponse()
@@ -123,7 +118,7 @@ public class AsyncServiceFunctionTest {
                 .setContentType(MessageProperties.CONTENT_TYPE_JSON)
                 .build();
 
-        UserIdAndAddressIdRequest req = new UserIdAndAddressIdRequest(orderMessage.getUserId(), orderMessage.getAddressId());
+        OrderInformationRequest req = new OrderInformationRequest(orderMessage.getUserId(), orderMessage.getAddressId());
         OrderInformation userInfo = OrderInformation.builder()
                 .userId(req.getUserId())
                 .fullName("Full Name")
@@ -204,7 +199,7 @@ public class AsyncServiceFunctionTest {
                 .setContentType(MessageProperties.CONTENT_TYPE_JSON)
                 .build();
 
-        UserIdAndAddressIdRequest req = new UserIdAndAddressIdRequest(orderMessage.getUserId(), orderMessage.getAddressId());
+        OrderInformationRequest req = new OrderInformationRequest(orderMessage.getUserId(), orderMessage.getAddressId());
         OrderInformation userInfo = OrderInformation.builder()
                 .userId(req.getUserId())
                 .fullName("Full Name")

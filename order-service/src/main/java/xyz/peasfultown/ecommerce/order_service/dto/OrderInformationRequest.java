@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @Builder
-public class UserIdAndAddressIdRequest {
+public class OrderInformationRequest {
     private String userId;
     private String addressId;
 }

@@ -4,7 +4,6 @@ import feign.Response;
 import feign.codec.ErrorDecoder;
 import org.springframework.http.HttpStatus;
 import xyz.peasfultown.ecommerce.order_service.exception.CustomErrorResponseException;
-import xyz.peasfultown.ecommerce.order_service.exception.FeignUserServiceNotFoundException;
 
 public class UserServiceErrorDecoder implements ErrorDecoder {
     @Override

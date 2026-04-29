@@ -18,14 +18,12 @@ import xyz.peasfultown.ecommerce.order_service.dto.*;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderItemEntity;
 import xyz.peasfultown.ecommerce.order_service.exception.CustomErrorResponseException;
-import xyz.peasfultown.ecommerce.order_service.exception.FeignUserServiceNotFoundException;
 import xyz.peasfultown.ecommerce.order_service.exception.OrderNotFoundException;
 import xyz.peasfultown.ecommerce.order_service.mapper.OrderMapper;
 import xyz.peasfultown.ecommerce.order_service.repository.OrderItemRepository;
 import xyz.peasfultown.ecommerce.order_service.repository.OrderRepository;
 import xyz.peasfultown.ecommerce.order_service.repository.specification.OrderSpecification;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Slf4j
@@ -98,7 +96,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order createOrder(OrderCreateMessage message) {
-        UserIdAndAddressIdRequest req = UserIdAndAddressIdRequest.builder()
+        OrderInformationRequest req = OrderInformationRequest.builder()
                 .userId(message.getUserId())
                 .addressId(message.getAddressId())
             .build();
