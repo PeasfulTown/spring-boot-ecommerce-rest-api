@@ -13,7 +13,7 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
+import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessage;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -63,7 +63,7 @@ public class RabbitMqConfig {
     public DefaultClassMapper classMapper() {
         DefaultClassMapper classMapper = new DefaultClassMapper();
         Map<String, Class<?>> idClassMapping = new HashMap<>();
-        idClassMapping.put("ProductStockUpdateMessageDto", ProductStockUpdateMessageDto.class);
+        idClassMapping.put("ProductStockUpdateMessage", ProductStockUpdateMessage.class);
         classMapper.setIdClassMapping(idClassMapping);
         return classMapper;
     }

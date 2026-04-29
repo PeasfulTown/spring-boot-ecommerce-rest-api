@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import xyz.peasfultown.ecommerce.product_service.config.RabbitMqConstants;
-import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
+import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessage;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
 import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 import xyz.peasfultown.ecommerce.product_service.repository.CategoryRepository;
@@ -99,8 +99,8 @@ public class MessageConsumerTest {
         Map<String, Integer> map = new HashMap<>();
         map.put(p1.getId().toString(), 10);
         map.put(p2.getId().toString(), 5);
-        ProductStockUpdateMessageDto dto = ProductStockUpdateMessageDto.builder()
-                .content(map).build();
+        ProductStockUpdateMessage dto = ProductStockUpdateMessage.builder()
+                .productIdStockMap(map).build();
 
         Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(dto))
                         .setHeader(RabbitMqConstants.TYPEID_HEADER, "ProductStockUpdateMessageDto")
