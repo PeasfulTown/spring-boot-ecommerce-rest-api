@@ -1,7 +1,9 @@
 package xyz.peasfultown.ecommerce.user_service.exception;
 
-public class UserNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class UserNotFoundException extends CustomErrorResponseException {
     public UserNotFoundException(String message) {
-        super(message);
+        super(HttpStatus.NOT_FOUND, message);
     }
 }

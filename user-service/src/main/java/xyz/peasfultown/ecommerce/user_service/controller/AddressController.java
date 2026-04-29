@@ -5,8 +5,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import xyz.peasfultown.ecommerce.user_api.AddressApi;
 import xyz.peasfultown.ecommerce.user_api.model.Address;
-import xyz.peasfultown.ecommerce.user_api.model.NewAddressReq;
-import xyz.peasfultown.ecommerce.user_api.model.UpdateAddressReq;
+import xyz.peasfultown.ecommerce.user_api.model.AddressCreateRequest;
+import xyz.peasfultown.ecommerce.user_api.model.AddressUpdateRequest;
+import xyz.peasfultown.ecommerce.user_service.exception.AccessForbiddenException;
 import xyz.peasfultown.ecommerce.user_service.service.AddressService;
 
 import java.util.List;
@@ -23,34 +24,55 @@ public class AddressController implements AddressApi {
     }
 
     @Override
-    public ResponseEntity<Address> createMyAddress(String xUserId, NewAddressReq newAddressReq) throws Exception {
-        return status(HttpStatus.CREATED).body(service.createAddress(xUserId, newAddressReq));
+    public ResponseEntity<Address> createAddress(String userIdHeader, String userIdPath, AddressCreateRequest createReq) throws Exception {
+        if (!userIdHeader.equals(userIdPath))
+            throw new AccessForbiddenException();
+        return status(HttpStatus.CREATED).body(service.createAddress(userIdHeader, createReq));
     }
 
     @Override
-    public ResponseEntity<Address> getMyAddressById(String userId, String addressId) throws Exception {
-        return ok(service.getUserAddressById(userId, addressId));
+    public ResponseEntity<List<Address>> getUserAddresses(String userIdHeader, String userIdPath, String userRole) throws Exception {
+        List<Address> addresses;
+        if (userRole.equals("ADMIN")
+                || userIdHeader.equals(userIdPath))
+            addresses = service.getAddressesByUserId(userIdPath);
+        else
+            throw new AccessForbiddenException();
+        return ok(addresses);
     }
 
     @Override
-    public ResponseEntity<Address> updateMyAddressById(String userIdHeader, String addressId, UpdateAddressReq updateAddressReq) throws Exception {
-        return ok(service.updateAddressById(userIdHeader, addressId, updateAddressReq));
+    public ResponseEntity<Address> getAddress(String userIdHeader, String userRoleHeader, String addressIdPath) throws Exception {
+        Address address;
+        if (userRoleHeader.equals("ADMIN"))
+            address = service.getAddress(addressIdPath);
+        else
+            address = service.getAddress(userIdHeader, addressIdPath);
+        return ok(address);
     }
 
     @Override
-    public ResponseEntity<Void> deleteMyAddressById(String userId, String addressId) throws Exception {
-        service.deleteAddressById(userId, addressId);
+    public ResponseEntity<Address> updateAddress(String userIdHeader, String userRoleHeader, String addressIdPath, AddressUpdateRequest updateReq) throws Exception {
+        Address address;
+        if (userRoleHeader.equals("ADMIN"))
+            address = service.updateAddress(addressIdPath, updateReq);
+        else
+            address = service.updateAddress(userIdHeader, addressIdPath, updateReq);
+        return ok(address);
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteAddress(String userIdHeader, String userRoleHeader, String addressIdPath) throws Exception {
+        if (userRoleHeader.equals("ADMIN"))
+            service.deleteAddress(addressIdPath);
+        else
+            service.deleteAddress(userIdHeader, addressIdPath);
         return status(HttpStatus.NO_CONTENT).build();
     }
 
     @Override
-    public ResponseEntity<List<Address>> getAllMyAddresses(String userId) throws Exception {
-        return ok(service.getAllUserAddresses(userId));
-    }
-
-    @Override
-    public ResponseEntity<Void> setMyAddressAsPrimaryById(String userId, String addressId) throws Exception {
-        service.setAddressAsPrimaryById(userId, addressId);
+    public ResponseEntity<Void> setAddressAsPrimary(String userIdHeader, String addressId) throws Exception {
+        service.setAddressAsPrimary(userIdHeader, addressId);
         return status(HttpStatus.NO_CONTENT).build();
     }
 }

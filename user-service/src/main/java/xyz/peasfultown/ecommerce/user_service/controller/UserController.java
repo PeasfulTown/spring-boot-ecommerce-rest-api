@@ -1,17 +1,15 @@
 package xyz.peasfultown.ecommerce.user_service.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import xyz.peasfultown.ecommerce.user_api.UserApi;
-import xyz.peasfultown.ecommerce.user_api.model.NewUserReq;
-import xyz.peasfultown.ecommerce.user_api.model.UpdateUserReq;
-import xyz.peasfultown.ecommerce.user_api.model.User;
-import xyz.peasfultown.ecommerce.user_service.exception.ForbiddenException;
+import xyz.peasfultown.ecommerce.user_api.model.*;
+import xyz.peasfultown.ecommerce.user_service.exception.AccessForbiddenException;
 import xyz.peasfultown.ecommerce.user_service.service.UserService;
-
-import java.util.List;
 
 import static org.springframework.http.ResponseEntity.ok;
 import static org.springframework.http.ResponseEntity.status;
@@ -20,50 +18,79 @@ import static org.springframework.http.ResponseEntity.status;
 public class UserController implements UserApi {
     private final UserService service;
 
+    @Value("${services.internal-secret}")
+    private String internalSecret;
+
     @Autowired
     public UserController(UserService service) {
         this.service = service;
     }
 
-    // USER
-
     @Override
-    public ResponseEntity<User> createUser(NewUserReq newUserReq) throws Exception {
-        return status(HttpStatus.CREATED).body(service.createUser(newUserReq));
+    public ResponseEntity<User> createUser(UserCreateRequest req) throws Exception {
+        return status(HttpStatus.CREATED).body(service.createUser(req));
     }
 
     @Override
-    public ResponseEntity<User> updateMyUser(String xUserId, UpdateUserReq updateUserReq) throws Exception {
-        return ok(service.updateUser(xUserId, updateUserReq));
+    public ResponseEntity<PagedUserResponse> getUsers(String userRoleHeader, Integer pageNumber, Integer pageSize) throws Exception {
+        if (!userRoleHeader.equalsIgnoreCase("ADMIN"))
+            throw new AccessForbiddenException();
+
+        if (pageNumber == null)
+            pageNumber = 0;
+        if (pageSize == null)
+            pageSize = 10;
+
+        Page<User> userPage = service.getUsersPaged(pageNumber, pageSize);
+        PagedUserResponse res = PagedUserResponse.builder()
+                .content(userPage.getContent())
+                .page(ResponsePage.builder()
+                        .number(userPage.getNumber())
+                        .size(userPage.getSize())
+                        .totalElements(userPage.getTotalElements())
+                        .totalPages(userPage.getTotalPages())
+                        .build())
+        .build();
+
+        return ok(res);
     }
 
     @Override
-    public ResponseEntity<User> getMyUser(String xUserId) throws Exception {
-        return ok(service.getUser(xUserId));
+    public ResponseEntity<User> getUser(String userIdHeader, String userRoleHeader, String userIdPath) throws Exception {
+        User user;
+        if (userRoleHeader.equals("ADMIN")
+        || userIdHeader.equals(userIdPath))
+            user = service.getUser(userIdPath);
+        else
+            throw new AccessForbiddenException();
+
+        return ok(user);
     }
 
     @Override
-    public ResponseEntity<Void> deleteMyUser(String xUserId) throws Exception {
-        service.deleteUserById(xUserId);
+    public ResponseEntity<User> updateUser(String userIdHeader, String userRoleHeader, String userIdPath, UserUpdateRequest req) throws Exception {
+        User user;
+        if (userRoleHeader.equals("ADMIN")
+            || userIdHeader.equals(userIdPath))
+            user = service.updateUser(userIdPath, req);
+        else throw new AccessForbiddenException();
+        return ok(user);
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteUser(String userIdHeader, String userRoleHeader, String userIdPath) throws Exception {
+        if (userRoleHeader.equals("ADMIN")
+            || userIdHeader.equals(userIdPath))
+            service.deleteUser(userIdPath);
+        else throw new AccessForbiddenException();
         return status(HttpStatus.NO_CONTENT).build();
     }
 
-    // ADMIN
-
     @Override
-    public ResponseEntity<Void> deleteUser(String xUserRole, String id) throws Exception {
-        if (!xUserRole.equalsIgnoreCase("ADMIN"))
-            throw new ForbiddenException();
-
-        service.deleteUserById(id);
-        return status(HttpStatus.NO_CONTENT).build();
-    }
-
-    @Override
-    public ResponseEntity<List<User>> getUsers(String xUserRole) throws Exception {
-        if (!xUserRole.equalsIgnoreCase("ADMIN"))
-            throw new ForbiddenException();
-
-        return ok(service.getAllUsers());
+    public ResponseEntity<OrderInformation> getOrderInfo(String userRoleHeader, String internalSecret, OrderInformationRequest orderInformationRequest) throws Exception {
+        if (!internalSecret.equals(this.internalSecret)
+            || !userRoleHeader.equals("ADMIN"))
+            throw new AccessForbiddenException();
+        return ok(service.getOrderInfo(orderInformationRequest));
     }
 }

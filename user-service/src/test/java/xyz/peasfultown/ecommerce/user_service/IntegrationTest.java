@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -15,10 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import xyz.peasfultown.ecommerce.user_api.model.NewAddressReq;
-import xyz.peasfultown.ecommerce.user_api.model.NewUserReq;
-import xyz.peasfultown.ecommerce.user_api.model.UpdateAddressReq;
-import xyz.peasfultown.ecommerce.user_api.model.UpdateUserReq;
+import xyz.peasfultown.ecommerce.user_api.model.*;
 import xyz.peasfultown.ecommerce.user_service.entity.AddressEntity;
 import xyz.peasfultown.ecommerce.user_service.entity.UserEntity;
 import xyz.peasfultown.ecommerce.user_service.repository.AddressRepository;
@@ -26,6 +24,7 @@ import xyz.peasfultown.ecommerce.user_service.repository.UserRepository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -66,79 +65,66 @@ public class IntegrationTest {
     @Autowired
     private AddressRepository addrRepo;
 
-    private NewUserReq newUserReq;
-    private UserEntity userEntity;
-    private UpdateUserReq updateUserReq;
+    @Value("${services.internal-secret}")
+    private String internalSecret;
 
-    private NewAddressReq newAddressReq;
+    private UserEntity ue1;
+    private UserEntity ue2;
 
-    private AddressEntity addrEntity1;
-    private AddressEntity addrEntity2;
-    private AddressEntity addrEntity3;
-    private AddressEntity addrEntity4;
+    private AddressEntity addr1;
+    private AddressEntity addr2;
+    private AddressEntity addr3;
+    private AddressEntity addr4;
 
     @BeforeEach
     void setup() {
-        newUserReq = new NewUserReq()
-                .id(UUID.randomUUID().toString())
-                .email("someone@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567890");
-
-        userEntity = UserEntity.builder()
-                .id(UUID.fromString(newUserReq.getId()))
-                .email("someone@email.com")
-                .firstName("First")
-                .lastName("Last")
+        ue1 = UserEntity.builder()
+                .id(UUID.randomUUID())
+                .email("user1@email.com")
+                .firstName("First1")
+                .lastName("Last1")
                 .phone("1234567890")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
+                .build();
+        ue2 = UserEntity.builder()
+                .id(UUID.randomUUID())
+                .email("user2@email.com")
+                .firstName("First2")
+                .lastName("Last2")
+                .phone("1234567890")
                 .build();
 
-        updateUserReq = new UpdateUserReq()
-                .email("otherEmail@email.com")
-                .phone("0987654321");
-
-        newAddressReq = new NewAddressReq()
-                .number("42")
-                .street("Maple Ave")
-                .city("Austin")
-                .state("Texas")
-                .country("United States")
-                .postalCode("78701");
-
-        addrEntity1 = AddressEntity.builder()
+        addr1 = AddressEntity.builder()
                 .number("123")
-                .street("Street Ave 1")
+                .street("Street St1")
                 .city("City1")
                 .state("State1")
-                .country("Country 1")
-                .postalCode("postal1")
+                .country("Country1")
+                .postalCode("Postal1")
                 .isPrimary(false)
                 .build();
 
-        addrEntity2 = AddressEntity.builder()
+        addr2 = AddressEntity.builder()
                 .number("456")
-                .street("Street Ave 2")
+                .street("Street St11")
                 .city("City2")
                 .state("State2")
-                .country("Country 2")
-                .postalCode("postal2")
+                .country("Country2")
+                .postalCode("Postal2")
                 .isPrimary(false)
                 .build();
 
-        addrEntity3 = AddressEntity.builder()
+        addr3 = AddressEntity.builder()
                 .number("789")
-                .street("Street Ave 3")
+                .street("Street St3")
                 .city("City3")
                 .state("State3")
-                .country("Country 3")
+                .country("Country3")
                 .postalCode("postal3")
                 .isPrimary(false)
                 .build();
 
-        addrEntity4 = AddressEntity.builder()
+
+        addr4 = AddressEntity.builder()
                 .number("123")
                 .street("Street Ave 4")
                 .city("City4")
@@ -147,315 +133,272 @@ public class IntegrationTest {
                 .postalCode("postal4")
                 .isPrimary(false)
                 .build();
+
+        ue1.addAddress(addr1);
+        ue2.addAddresses(List.of(addr2, addr3, addr4));
+        userRepo.saveAll(List.of(ue1, ue2));
     }
 
     @Test
     void createUser_shouldReturn201_whenValidInput() throws Exception {
+        UserCreateRequest req = UserCreateRequest.builder()
+                .id(UUID.randomUUID().toString())
+                .email("user3@example.com")
+                .firstName("First3")
+                .lastName("Last3")
+                .phone("123457893")
+        .build();
         mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(newUserReq)))
+                        .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(newUserReq.getId()))
-                .andExpect(jsonPath("$.email").value(newUserReq.getEmail()))
-                .andExpect(jsonPath("$.firstName").value(newUserReq.getFirstName()))
-                .andExpect(jsonPath("$.lastName").value(newUserReq.getLastName()))
-                .andExpect(jsonPath("$.phone").value(newUserReq.getPhone()))
-                .andExpect(jsonPath("$.createdAt").isNotEmpty())
-                .andExpect(jsonPath("$.updatedAt").isNotEmpty());
+                ;
+
+        UserEntity ue = userRepo.findUserByEmail(req.getEmail()).orElseThrow();
+        assertEquals(req.getEmail(), ue.getEmail());
+        assertEquals(req.getFirstName(), ue.getFirstName());
+        assertEquals(req.getLastName(), ue.getLastName());
+        assertEquals(req.getPhone(), ue.getPhone());
     }
 
     @Test
     void createUser_shouldReturn400_whenEmailAlreadyExists() throws Exception {
-        userRepo.save(userEntity);
+        UserCreateRequest req = UserCreateRequest.builder()
+                .email("user3@example.com")
+                .firstName("First3")
+                .lastName("Last3")
+                .phone("123457893")
+                .build();
+
         mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(newUserReq)))
+                        .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void updateMyUser_shouldReturn200_whenValidInput() throws Exception {
-        userRepo.save(userEntity);
-        mvc.perform(patch("/api/v1/users/me")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(updateUserReq))
-                        .header("X-User-Id", userEntity.getId().toString()))
+    void getUsers_returns200_whenAdmin() throws Exception {
+        mvc.perform(get("/api/v1/users")
+                .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(userEntity.getId().toString()))
-                .andExpect(jsonPath("$.email").value(updateUserReq.getEmail()))
-                .andExpect(jsonPath("$.phone").value(updateUserReq.getPhone()))
-                .andExpect(jsonPath("$.firstName").value(userEntity.getFirstName()));
+        ;
     }
 
     @Test
-    void deleteMyUser_shouldReturn204_whenValidInput() throws Exception {
-        userRepo.save(userEntity);
-
-        mvc.perform(delete("/api/v1/users/me")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-User-Id", userEntity.getId().toString()))
-                .andExpect(status().isNoContent());
-
-        assertThat(userRepo.findById(userEntity.getId())).isNotPresent();
+    void getUsers_returns403_whenNotAdmin() throws Exception {
+        mvc.perform(get("/api/v1/users")
+                .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isForbidden())
+                ;
     }
 
     @Test
-    void getMyUser_shouldReturn200_whenValidInput() throws Exception {
-        userRepo.save(userEntity);
-        mvc.perform(get("/api/v1/users/me")
-                        .header("X-User-Id", userEntity.getId().toString()))
+    void getUser_returns200_whenValidRequest() throws Exception {
+        mvc.perform(get("/api/v1/users/{userId}", ue1.getId().toString())
+                .header("X-User-Id", ue1.getId())
+                .header("X-User-Role", "CUSTOMER"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(newUserReq.getId()))
-                .andExpect(jsonPath("$.email").value(newUserReq.getEmail()))
-                .andExpect(jsonPath("$.firstName").value(newUserReq.getFirstName()))
-                .andExpect(jsonPath("$.lastName").value(newUserReq.getLastName()))
-                .andExpect(jsonPath("$.phone").value(newUserReq.getPhone()))
-                .andExpect(jsonPath("$.createdAt").isNotEmpty())
-                .andExpect(jsonPath("$.updatedAt").isNotEmpty());
+                .andExpect(jsonPath("$.id").value(ue1.getId().toString()))
+                .andExpect(jsonPath("$.email").value(ue1.getEmail()))
+                .andExpect(jsonPath("$.firstName").value(ue1.getFirstName()))
+                .andExpect(jsonPath("$.lastName").value(ue1.getLastName()))
+                .andExpect(jsonPath("$.phone").value(ue1.getPhone()))
+                ;
     }
 
     @Test
-    void getMyUser_shouldReturn404_whenGivenNonExistentUserId() throws Exception {
-        mvc.perform(get("/api/v1/users/me")
-                        .header("X-User-Id", userEntity.getId().toString()))
+    void getUser_returns200_whenUserIdHeaderNotSameAsRequestUserId_AndIsAdmin() throws Exception {
+        mvc.perform(get("/api/v1/users/{userId}", ue1.getId().toString())
+                        .header("X-User-Id", UUID.randomUUID().toString())
+                        .header("X-User-Role", "ADMIN"))
+                .andExpect(status().isOk())
+        ;
+    }
+
+    @Test
+    void getUser_returns403_whenUserIdHeaderNotSameAsRequestedUserId_andNotAdmin() throws Exception {
+        mvc.perform(get("/api/v1/users/{userId}", ue1.getId().toString())
+                        .header("X-User-Id", ue2.getId())
+                        .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isForbidden())
+                ;
+    }
+
+    @Test
+    void updateUser_returns200_whenValidRequest() throws Exception {
+        UserUpdateRequest req = UserUpdateRequest.builder()
+                .email("new@example.com")
+                .firstName("NewFirst")
+                .lastName("NewLast")
+                .phone("123457899")
+        .build();
+
+        mvc.perform(patch("/api/v1/users/{userId}", ue1.getId().toString())
+                .header("X-User-Id", ue1.getId().toString())
+                        .header("X-User-Role", "CUSTOMER")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+
+        UserEntity ue = userRepo.findById(ue1.getId()).orElseThrow();
+        assertEquals(req.getEmail(), ue.getEmail());
+        assertEquals(req.getFirstName(), ue.getFirstName());
+        assertEquals(req.getLastName(), ue.getLastName());
+        assertEquals(req.getPhone(), ue.getPhone());
+    }
+
+    @Test
+    void updateUser_returns200_whenIsAdmin() throws Exception {
+        UserUpdateRequest req = UserUpdateRequest.builder()
+                .email("new@example.com")
+                .firstName("NewFirst")
+                .lastName("NewLast")
+                .phone("123457899")
+                .build();
+
+        mvc.perform(patch("/api/v1/users/{userId}", ue1.getId().toString())
+                        .header("X-User-Id", UUID.randomUUID().toString())
+                        .header("X-User-Role", "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+
+        UserEntity ue = userRepo.findById(ue1.getId()).orElseThrow();
+        assertEquals(req.getEmail(), ue.getEmail());
+        assertEquals(req.getFirstName(), ue.getFirstName());
+        assertEquals(req.getLastName(), ue.getLastName());
+        assertEquals(req.getPhone(), ue.getPhone());
+    }
+
+    @Test
+    void updateUser_returns403_whenUserIdHeaderNotSameAsRequestedUserId_andNotAdmin() throws Exception {
+        UserUpdateRequest req = UserUpdateRequest.builder()
+                .email("new@example.com")
+                .firstName("NewFirst")
+                .lastName("NewLast")
+                .phone("123457899")
+                .build();
+
+        mvc.perform(patch("/api/v1/users/{userId}", ue1.getId().toString())
+                        .header("X-User-Id", UUID.randomUUID().toString())
+                        .header("X-User-Role", "CUSTOMER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateUser_returns404_whenUserNotFound() throws Exception {
+        UUID randUserId = UUID.randomUUID();
+        UserUpdateRequest req = UserUpdateRequest.builder()
+                .email("new@example.com")
+                .firstName("NewFirst")
+                .lastName("NewLast")
+                .phone("123457899")
+                .build();
+
+        mvc.perform(patch("/api/v1/users/{userId}", randUserId.toString())
+                        .header("X-User-Id", randUserId.toString())
+                        .header("X-User-Role", "CUSTOMER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void createMyAddress_shouldReturn201_whenValidInput() throws Exception {
-        userRepo.save(userEntity);
+    void deleteUser_returns204_whenValidRequest() throws Exception {
+        mvc.perform(delete("/api/v1/users/{userId}", ue1.getId().toString())
+                .header("X-User-Id", ue1.getId().toString())
+                .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isNoContent())
+                ;
 
-        mvc.perform(post("/api/v1/users/me/addresses")
-                        .header("X-User-Id", userEntity.getId().toString())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(newAddressReq)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").isNotEmpty())
-                .andExpect(jsonPath("$.userId").value(userEntity.getId().toString()))
-                .andExpect(jsonPath("$.number").value(newAddressReq.getNumber()))
-                .andExpect(jsonPath("$.street").value(newAddressReq.getStreet()))
-                .andExpect(jsonPath("$.city").value(newAddressReq.getCity()))
-                .andExpect(jsonPath("$.state").value(newAddressReq.getState()))
-                .andExpect(jsonPath("$.country").value(newAddressReq.getCountry()))
-                .andExpect(jsonPath("$.postalCode").value(newAddressReq.getPostalCode()))
-                .andExpect(jsonPath("$.isPrimary").isNotEmpty());
+        Optional<UserEntity> ue = userRepo.findById(ue1.getId());
+        assertThat(ue).isEmpty();
     }
 
     @Test
-    void getAllMyAddresses_shouldReturn200_whenValidInput() throws Exception {
-        userEntity = userRepo.save(userEntity);
-
-        addrEntity1.setUser(userEntity);
-        addrEntity2.setUser(userEntity);
-        addrEntity3.setUser(userEntity);
-        addrEntity4.setUser(userEntity);
-
-        addrRepo.saveAll(List.of(addrEntity1, addrEntity2, addrEntity3, addrEntity4));
-
-        mvc.perform(get("/api/v1/users/me/addresses")
-                        .header("X-User-Id", userEntity.getId().toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(4)));
-    }
-
-    @Test
-    void getMyAddressById_shouldReturn200_whenValidInput() throws Exception {
-        userEntity = userRepo.save(userEntity);
-
-        addrEntity1.setUser(userEntity);
-
-        addrEntity1 = addrRepo.save(addrEntity1);
-
-        mvc.perform(get("/api/v1/users/me/addresses/{id}", addrEntity1.getId().toString())
-                        .header("X-User-Id", userEntity.getId().toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.number").value(addrEntity1.getNumber()))
-                .andExpect(jsonPath("$.street").value(addrEntity1.getStreet()))
-                .andExpect(jsonPath("$.city").value(addrEntity1.getCity()))
-                .andExpect(jsonPath("$.state").value(addrEntity1.getState()))
-                .andExpect(jsonPath("$.country").value(addrEntity1.getCountry()))
-                .andExpect(jsonPath("$.postalCode").value(addrEntity1.getPostalCode()))
-                .andExpect(jsonPath("$.isPrimary").value(addrEntity1.isPrimary()))
-                .andExpect(jsonPath("$.userId").value(addrEntity1.getUser().getId().toString()));
-    }
-
-    @Test
-    void deleteMyAddressById_shouldReturn204_whenValidInput() throws Exception {
-        userEntity = userRepo.save(userEntity);
-
-        addrEntity1.setUser(userEntity);
-
-        addrEntity1 = addrRepo.save(addrEntity1);
-
-        mvc.perform(delete("/api/v1/users/me/addresses/{id}", addrEntity1.getId().toString())
-                        .header("X-User-Id", userEntity.getId().toString()))
-                .andExpect(status().isNoContent());
-
-        assertThat(addrRepo.findById(addrEntity1.getId())).isNotPresent();
-    }
-
-    @Test
-    void updateMyAddressById_shouldReturn200_whenValidInput() throws Exception {
-        userEntity = userRepo.save(userEntity);
-
-        addrEntity1.setUser(userEntity);
-
-        addrEntity1 = addrRepo.save(addrEntity1);
-
-        UpdateAddressReq updateAddressReq = new UpdateAddressReq()
-                .street("New Street")
-                .city("New City");
-
-        mvc.perform(patch("/api/v1/users/me/addresses/{id}", addrEntity1.getId().toString())
-                        .header("X-User-Id", userEntity.getId().toString())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(updateAddressReq)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.number").value(addrEntity1.getNumber()))
-                .andExpect(jsonPath("$.street").value(updateAddressReq.getStreet()))
-                .andExpect(jsonPath("$.city").value(updateAddressReq.getCity()))
-                .andExpect(jsonPath("$.state").value(addrEntity1.getState()))
-                .andExpect(jsonPath("$.country").value(addrEntity1.getCountry()))
-                .andExpect(jsonPath("$.postalCode").value(addrEntity1.getPostalCode()))
-                .andExpect(jsonPath("$.isPrimary").value(addrEntity1.isPrimary()))
-                .andExpect(jsonPath("$.userId").value(addrEntity1.getUser().getId().toString()));
-    }
-
-    @Test
-    void setMyAddressAsPrimaryById_shouldReturn200_whenValidInput() throws Exception {
-        userEntity = userRepo.save(userEntity);
-        addrEntity1.setPrimary(true);
-        addrEntity1.setUser(userEntity);
-
-        addrEntity2.setUser(userEntity);
-        addrEntity3.setUser(userEntity);
-        addrRepo.saveAll(List.of(addrEntity1, addrEntity2, addrEntity3));
-
-        mvc.perform(post("/api/v1/users/me/addresses/{id}/primary", addrEntity3.getId().toString())
-                .header("X-User-Id", userEntity.getId().toString()))
-                .andExpect(status().isNoContent());
-
-        assertFalse(addrRepo.findById(addrEntity1.getId()).get().isPrimary());
-        assertTrue(addrRepo.findById(addrEntity3.getId()).get().isPrimary());
-    }
-
-    @Test
-    void getUsers_shouldReturn200_whenHasAdminRole() throws Exception {
-        UserEntity u1 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone1@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567890")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-        UserEntity u2 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone2@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567891")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-        UserEntity u3 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone3@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567892")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-
-        userRepo.saveAll(List.of(u1, u2, u3));
-
-        mvc.perform(get("/api/v1/users")
+    void deleteUser_returns204_whenUserIdHeaderNotSameAsRequestedUserId_andIsAdmin() throws Exception {
+        mvc.perform(delete("/api/v1/users/{userId}", ue1.getId().toString())
+                        .header("X-User-Id", UUID.randomUUID().toString())
                         .header("X-User-Role", "ADMIN"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)));
+                .andExpect(status().isNoContent())
+        ;
     }
 
     @Test
-    void getUsers_shouldReturn403_whenNotHasAdminRole() throws Exception {
-        UserEntity u1 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone1@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567890")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-        UserEntity u2 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone2@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567891")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-        UserEntity u3 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone3@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567892")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-
-        userRepo.saveAll(List.of(u1, u2, u3));
-
-        mvc.perform(get("/api/v1/users")
-                        .header("X-User-Role", "USER"))
+    void deleteUser_returns403_whenUserIdHeaderNotSameAsRequestedUserId_andNotAdmin() throws Exception {
+        mvc.perform(delete("/api/v1/users/{userId}", ue2.getId().toString())
+                        .header("X-User-Id", ue1.getId().toString())
+                        .header("X-User-Role", "CUSTOMER"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.email").doesNotExist());
+        ;
     }
 
     @Test
-    void deleteUser_shouldReturn204_whenHasAdminRole() throws Exception {
-        UserEntity u1 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone1@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567890")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-
-        userRepo.save(u1);
-
-        mvc.perform(delete("/api/v1/users/{id}", u1.getId().toString())
-                        .header("X-User-Role", "ADMIN"))
-                .andExpect(status().isNoContent());
-
-        assertThat(userRepo.findById(u1.getId())).isNotPresent();
+    void deleteUser_returns404_whenUserNotFound() throws Exception {
+        UUID randUserId = UUID.randomUUID();
+        mvc.perform(delete("/api/v1/users/{userId}", randUserId.toString())
+                        .header("X-User-Id", randUserId.toString())
+                        .header("X-User-Role", "CUSTOMER"))
+                .andExpect(status().isNotFound())
+        ;
     }
 
     @Test
-    void deleteUser_shouldReturn403_whenNotHasAdminRole() throws Exception {
-        UserEntity u1 = UserEntity.builder()
-                .id(UUID.randomUUID())
-                .email("someone1@email.com")
-                .firstName("First")
-                .lastName("Last")
-                .phone("1234567890")
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
+    void getOrderInformation_returns200_whenValidRequest() throws Exception {
+        OrderInformationRequest req = OrderInformationRequest.builder()
+                .userId(ue1.getId().toString())
+                .addressId(addr1.getId().toString())
+        .build();
+
+        mvc.perform(post("/api/v1/users/order-info")
+                .header("X-Internal-Service-Secret", internalSecret)
+                .header("X-User-Role", "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(ue1.getId().toString()))
+                .andExpect(jsonPath("$.fullName").value(ue1.getFirstName() + " " + ue1.getLastName()))
+                .andExpect(jsonPath("$.email").value(ue1.getEmail()))
+                .andExpect(jsonPath("$.phone").value(ue1.getPhone()))
+                .andExpect(jsonPath("$.address.id").value(addr1.getId().toString()))
+                .andExpect(jsonPath("$.address.streetNumber").value(addr1.getNumber()))
+                .andExpect(jsonPath("$.address.streetName").value(addr1.getStreet()))
+                .andExpect(jsonPath("$.address.city").value(addr1.getCity()))
+                .andExpect(jsonPath("$.address.state").value(addr1.getState()))
+                .andExpect(jsonPath("$.address.country").value(addr1.getCountry()))
+                .andExpect(jsonPath("$.address.postalCode").value(addr1.getPostalCode()))
+                ;
+    }
+
+    @Test
+    void getOrderInformation_returns403_whenIncorrectInternalServiceSecret() throws Exception {
+        OrderInformationRequest req = OrderInformationRequest.builder()
+                .userId(ue1.getId().toString())
+                .addressId(addr1.getId().toString())
                 .build();
 
-        userRepo.save(u1);
-
-        mvc.perform(delete("/api/v1/users/{id}", u1.getId().toString())
-                        .header("X-User-Role", "USER"))
+        mvc.perform(post("/api/v1/users/order-info")
+                        .header("X-Internal-Service-Secret", "someOtherSecret")
+                        .header("X-User-Role", "ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
-
-        assertThat(userRepo.findById(u1.getId())).isPresent();
     }
 
+    @Test
+    void getOrderInformation_returns403_whenNotAdmin() throws Exception {
+        OrderInformationRequest req = OrderInformationRequest.builder()
+                .userId(ue1.getId().toString())
+                .addressId(addr1.getId().toString())
+                .build();
 
+        mvc.perform(post("/api/v1/users/order-info")
+                        .header("X-Internal-Service-Secret", internalSecret)
+                        .header("X-User-Role", "CUSTOMER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }
