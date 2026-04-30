@@ -24,3 +24,19 @@ create table if not exists address (
         foreign key (user_id) references `user` (id),
     unique (user_id, number, street, city, state, postal_code)
 );
+
+create table if not exists card (
+    id varchar(36) not null,
+    user_id varchar(36) not null,
+    card_holder_name varchar(100) not null,
+    last_four_digits varchar(4) not null,
+    card_type enum("VISA", "MASTERCARD", "AMEX") not null,
+    expiry_month int NOT NULL,
+    expiry_year int NOT NULL,
+    token varchar(255) not null unique,
+    is_default boolean not null default false,
+    primary key (id),
+    constraint fk_payment_card_user_id
+        foreign key (user_id) references `user` (id)
+        on delete cascade
+);
