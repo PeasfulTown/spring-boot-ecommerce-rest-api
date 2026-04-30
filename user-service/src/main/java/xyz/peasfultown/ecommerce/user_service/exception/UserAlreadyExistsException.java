@@ -1,7 +1,9 @@
 package xyz.peasfultown.ecommerce.user_service.exception;
 
-public class UserAlreadyExistsException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class UserAlreadyExistsException extends CustomErrorResponseException {
     public UserAlreadyExistsException(String message) {
-        super(message);
+        super(HttpStatus.BAD_REQUEST, message);
     }
 }

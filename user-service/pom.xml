@@ -197,6 +197,9 @@
 							<generateApis>true</generateApis>
 							<output>${project.build.directory}/generated-sources/ecommerce</output>
 							<supportingFilesToGenerate>ApiUtil.java,pom.xml</supportingFilesToGenerate>
+							<schemaMappings>
+								<schemaMapping>ProblemDetail=org.springframework.http.ProblemDetail</schemaMapping>
+							</schemaMappings>
 						</configuration>
 					</execution>
 				</executions>

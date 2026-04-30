@@ -19,21 +19,17 @@ paths:
     get:
       tags: [ cart ]
       summary: Get user's cart
-      operationId: getMyCart
+      operationId: getCart
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
       responses:
         '200':
-          description: Successfully read
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Cart'
+          $ref: '#/components/responses/Cart'
 
     delete:
       tags: [ cart ]
       summary: Clear user's cart
-      operationId: clearMyCart
+      operationId: clearCart
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
       responses:
@@ -45,87 +41,69 @@ paths:
     post:
       tags: [ cart ]
       summary: Send cart as order
-      operationId: submitOrder
+      operationId: checkout
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
       requestBody:
-        description: Cart information and user information
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CartCheckoutReq'
+        $ref: '#/components/requestBodies/CheckoutCart'
       responses:
         '202':
           description: Sent to messaging queue to process order
           content: {}
-
+        '400':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
 
   /api/v1/cart/items:
     post:
       tags: [ cart ]
       summary: Add item to cart
-      operationId: addItemToCart
+      operationId: createCartItem
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
       requestBody:
-        description: Request body with product ID and quantity to add to cart
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddItemReq'
+        $ref: '#/components/requestBodies/CreateCartItem'
       responses:
         '200':
-          description: Item added to cart successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CartItem'
+          $ref: '#/components/responses/CartItem'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/cart/items/{id}:
+  /api/v1/cart/items/{itemId}:
     patch:
       tags: [ cart ]
       summary: Update item's quantity in cart
       operationId: updateItemQuantity
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ItemIdPath'
       requestBody:
-        description: Request body with product ID and new quantity
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateItemQuantityReq'
+        $ref: '#/components/requestBodies/UpdateCartItemQuantity'
       responses:
         '200':
-          description: Update successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CartItem'
+          $ref: '#/components/responses/CartItem'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
 
     delete:
       tags: [ cart ]
       summary: Remove item from user's cart
-      operationId: deleteItemFromCart
+      operationId: removeCartItem
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/ItemIdPath'
       responses:
         '204':
           description: Item removal successful
           content: {}
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
 
 components:
 
   parameters:
+
     UserIdHeader:
       name: X-User-Id
       in: header
@@ -143,26 +121,82 @@ components:
           - ADMIN
           - CUSTOMER
 
+    ItemIdPath:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  requestBodies:
+
+    CreateCartItem:
+      description: Request body with product ID and quantity to add to cart
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ItemCreateRequest'
+
+    UpdateCartItemQuantity:
+      description: Update item quantity request object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ItemQuantityUpdateRequest'
+
+    CheckoutCart:
+      description: Cart information and user information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CartCheckoutRequest'
+
+  responses:
+
+    ProblemDetail:
+      description: Api error detail response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    Cart:
+      description: Cart object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Cart'
+
+    CartItem:
+      description: Cart item object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CartItem'
+
   schemas:
 
-    ErrorResponse:
+    ProblemDetail:
       type: object
       properties:
+        title:
+          type: string
+          example: "Not Found"
         status:
           type: integer
-        error:
+          example: 404
+        detail:
           type: string
-        message:
+          example: "Order not found with id: 123"
+        instance:
           type: string
-        path:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
-      required: [ status, message ]
+          format: uri
+          example: "/api/v1/orders/123"
+      required: [ status ]
 
     Cart:
       type: object
+      required: [ id, userId, totalItems, totalPrice ]
       properties:
         id:
           type: string
@@ -180,6 +214,7 @@ components:
 
     CartItem:
       type: object
+      required: [ id, productId, productName, productPrice, quantity, subtotal ]
       properties:
         id:
           type: string
@@ -195,27 +230,15 @@ components:
         subtotal:
           type: BigDecimal
 
-    ProductStockStatus:
-      type: string
-      enum:
-        - IN_STOCK
-        - OUT_OF_STOCK
-        - LOW_STOCK
-
-    ProductActiveStatus:
+    ActiveStatus:
       type: string
       enum:
         - ACTIVE
         - INACTIVE
 
-    ProductId:
-      type: object
-      properties:
-        id:
-          type: string
-
     Product:
       type: object
+      required: [ id, name, description, imageUrls, activeStatus ]
       description: The product object
       properties:
         id:
@@ -230,14 +253,13 @@ components:
           type: array
           items:
             type: string
-        stockStatus:
-          $ref: '#/components/schemas/ProductStockStatus'
+        stock:
+          type: integer
+          format: int32
         activeStatus:
-          $ref: '#/components/schemas/ProductActiveStatus'
-      xml:
-        name: Product
+          $ref: '#/components/schemas/ActiveStatus'
 
-    AddItemReq:
+    ItemCreateRequest:
       type: object
       required: [ productId, quantity ]
       properties:
@@ -247,7 +269,7 @@ components:
           type: integer
           format: int32
 
-    UpdateItemQuantityReq:
+    ItemQuantityUpdateRequest:
       type: object
       required: [ quantity ]
       properties:
@@ -255,7 +277,7 @@ components:
           type: integer
           format: int32
 
-    CartCheckoutReq:
+    CartCheckoutRequest:
       type: object
       required: [ addressId, cardId ]
       properties:

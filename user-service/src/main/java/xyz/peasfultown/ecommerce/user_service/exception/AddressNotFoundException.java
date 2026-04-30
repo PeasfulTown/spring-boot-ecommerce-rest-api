@@ -1,7 +1,9 @@
 package xyz.peasfultown.ecommerce.user_service.exception;
 
-public class AddressNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class AddressNotFoundException extends CustomErrorResponseException {
     public AddressNotFoundException(String message) {
-        super(message);
+        super(HttpStatus.NOT_FOUND, message);
     }
 }

@@ -1,38 +1,27 @@
 package xyz.peasfultown.ecommerce.cart_service.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageBuilder;
-import org.springframework.amqp.core.MessagePropertiesBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.cart_api.model.*;
 import xyz.peasfultown.ecommerce.cart_service.client.ProductServiceClient;
-import xyz.peasfultown.ecommerce.cart_service.client.UserServiceClient;
-import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
-import xyz.peasfultown.ecommerce.cart_service.dto.Address;
-import xyz.peasfultown.ecommerce.cart_service.dto.OrderSubmission;
-import xyz.peasfultown.ecommerce.cart_service.dto.User;
+import xyz.peasfultown.ecommerce.cart_service.dto.BatchProductIdRequest;
+import xyz.peasfultown.ecommerce.cart_service.dto.OrderCreateMessage;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartEntity;
 import xyz.peasfultown.ecommerce.cart_service.entity.CartItemEntity;
-import xyz.peasfultown.ecommerce.cart_service.exception.CartCheckoutMessageException;
-import xyz.peasfultown.ecommerce.cart_service.exception.CartNotFoundException;
-import xyz.peasfultown.ecommerce.cart_service.exception.EmptyCartCheckoutException;
-import xyz.peasfultown.ecommerce.cart_service.exception.ProductOutOfStockException;
+import xyz.peasfultown.ecommerce.cart_service.exception.*;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartItemMapper;
 import xyz.peasfultown.ecommerce.cart_service.mapper.CartMapper;
+import xyz.peasfultown.ecommerce.cart_service.messaging.MessagePublisher;
 import xyz.peasfultown.ecommerce.cart_service.repository.CartItemRepository;
 import xyz.peasfultown.ecommerce.cart_service.repository.CartRepository;
 
-import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -42,140 +31,73 @@ public class CartServiceImpl implements CartService {
     private final CartMapper mapper;
     private final CartItemMapper ciMapper;
     private final ProductServiceClient prodClient;
-    private final UserServiceClient userClient;
-    private final RabbitTemplate rabbitTemplate;
-    private final ObjectMapper objMapper;
+    private final MessagePublisher messagePublisher;
 
     public CartServiceImpl(CartRepository repo, CartItemRepository ciRepo, CartMapper mapper,
-                           CartItemMapper ciMapper, ProductServiceClient prodClient, UserServiceClient userClient, RabbitTemplate rabbitTemplate, ObjectMapper objMapper) {
+                           CartItemMapper ciMapper, ProductServiceClient prodClient, MessagePublisher messagePublisher) {
         this.repo = repo;
         this.ciRepo = ciRepo;
         this.mapper = mapper;
         this.ciMapper = ciMapper;
         this.prodClient = prodClient;
-        this.userClient = userClient;
-        this.rabbitTemplate = rabbitTemplate;
-        this.objMapper = objMapper;
+        this.messagePublisher = messagePublisher;
     }
 
     @Override
     public Cart getCartByUserId(String userId) {
         CartEntity ce = getCartEntityByUserId(userId);
-        return mapper.toModel(ce);
+
+        return getProductInfoAndCreateCartModel(ce);
     }
 
     @Override
-    public CartItem addItemToCart(String userId, AddItemReq req) {
+    public CartItem addItemToCart(String userId, ItemCreateRequest req) {
         CartEntity ce = getCartEntityByUserId(userId);
 
-        Product prod = getProductById(req.getProductId());
+        Product product;
+        try {
+            product = getProductById(req.getProductId());
+        } catch (
+                FeignProductNotFoundException e) {
+            throw new ProductNotFoundException(req.getProductId());
+        }
+
+        // if product not active or out of stock, throw exception
+        if (product.getStock() == 0)
+            throw new ProductOutOfStockException(product.getId());
+
+        if (product.getActiveStatus().equals(ActiveStatus.INACTIVE))
+            throw new ProductNotFoundException(product.getId());
 
         Optional<CartItemEntity> cieo =
                 ciRepo.findCartItemByCartIdAndProductId(
                         ce.getId(), UUID.fromString(req.getProductId()));
 
+        // TODO: check if product has enough stock for the request quantity
         CartItemEntity cie;
         if (cieo.isPresent()) {
             cie = cieo.get();
             cie.setQuantity(cie.getQuantity() + req.getQuantity());
-            cie.setSubtotal(cie.getSubtotal().add(prod.getPrice().multiply(BigDecimal.valueOf(req.getQuantity()))));
         } else {
             cie = CartItemEntity.builder()
                     .cart(ce)
                     .productId(UUID.fromString(req.getProductId()))
-                    .productName(prod.getName())
-                    .productPrice(prod.getPrice())
                     .quantity(req.getQuantity())
-                    .subtotal(prod.getPrice().multiply(BigDecimal.valueOf(req.getQuantity())))
                     .build();
         }
-
-        ce.setTotalItems(ce.getTotalItems() + req.getQuantity());
-        ce.setTotalPrice(ce.getTotalPrice().add(prod.getPrice().multiply(BigDecimal.valueOf(req.getQuantity()))));
-
-        cie = ciRepo.save(cie);
-        ce.getItems().add(cie);
+        ce.addItem(cie);
         repo.save(ce);
-        return ciMapper.toModel(cie);
-    }
-
-    private CartEntity getCartEntityByUserId(String userId) {
-        Optional<CartEntity> ceo = repo.findCartByUserId(UUID.fromString(userId));
-
-        CartEntity cart;
-        if (ceo.isEmpty()) {
-            cart = CartEntity.builder()
-                    .userId(UUID.fromString(userId))
-                    .build();
-            cart = repo.save(cart);
-        } else {
-            cart = ceo.get();
-            if (!cart.getItems().isEmpty()) {
-                List<ProductId> productIds = cart.getItems().stream().map(i ->
-                        new ProductId().id(i.getProductId().toString())).toList();
-                List<Product> products = getProductsByIds(productIds);
-                updateCartItemAndProductLinks(cart.getItems(), products);
-                calculateCartEntityItemCountAndTotalPrice(cart);
-                ciRepo.saveAll(cart.getItems());
-                cart = repo.save(cart);
-            }
-        }
-        return repo.save(cart);
-    }
-
-    private Product getProductById(String productId) {
-        ResponseEntity<Product> res = prodClient.getProductById(productId);
-        Product prod = res.getBody();
-
-        if (prod.getStockStatus().equals(ProductStockStatus.OUT_OF_STOCK))
-            throw new ProductOutOfStockException(prod.getId());
-
-        return prod;
-    }
-
-    private List<Product> getProductsByIds(List<ProductId> productIds) {
-        // TODO: maybe add checks for products that were made inactive/out of stock
-        ResponseEntity<List<Product>> res = prodClient.getProductsByIds(productIds);
-        return res.getBody();
-    }
-
-    private void updateCartItemAndProductLinks(
-            List<CartItemEntity> cartItems,
-            List<Product> products
-    ) {
-        cartItems.forEach(i -> {
-            Product matchingProduct = products.stream().filter(p ->
-                    p.getId().equals(i.getProductId().toString())).findFirst().get();
-            if (!i.getProductName().equals(matchingProduct.getName())) {
-                i.setProductName(matchingProduct.getName());
-            }
-
-            if (!i.getProductPrice().equals(matchingProduct.getPrice())) {
-                i.setProductPrice(matchingProduct.getPrice());
-                i.setSubtotal(i.getProductPrice().multiply(BigDecimal.valueOf(i.getQuantity())));
-            }
-        });
-    }
-
-    private void calculateCartEntityItemCountAndTotalPrice(CartEntity ce) {
-        int itemCount = ce.getItems().stream()
-                .mapToInt(CartItemEntity::getQuantity).sum();
-        ce.setTotalItems(itemCount);
-        ce.setTotalPrice(BigDecimal.ZERO);
-        ce.getItems().forEach(i -> {
-            ce.setTotalPrice(ce.getTotalPrice().add(i.getProductPrice().multiply(BigDecimal.valueOf(i.getQuantity()))));
-        });
+        return ciMapper.toModel(cie, product);
     }
 
     @Override
-    public void clearUserCart(String userId) {
+    public void clearCart(String userId) {
         // don't need to use get user cart private function which updates cart items
         // since the cart is being cleared anyway
         CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
                 .orElseThrow(() -> new CartNotFoundException(String.format(
                         "Cart not found by user ID: %s", userId
                 )));
-        ciRepo.deleteAll(ce.getItems());
         ce.getItems().clear();
         repo.save(ce);
     }
@@ -187,55 +109,138 @@ public class CartServiceImpl implements CartService {
                         "Cart not found by user ID: %s", userId
                 )));
 
-        CartItemEntity cie = ce.getItems().stream().filter(ci -> ci.getId().equals(UUID.fromString(itemId))).findFirst().get();
-        ce.getItems().remove(cie);
-        ciRepo.delete(cie);
+        ce.getItems().remove(ce.getItems().stream().filter(i ->
+            i.getId().equals(UUID.fromString(itemId)))
+            .findFirst().orElseThrow(() ->
+                new CartItemNotFoundException(String.format(
+                    "Cart item not found by ID: %s", itemId))));
+
         repo.save(ce);
     }
 
     @Override
-    public CartItem updateCartItemQuantity(String userId, String itemId, UpdateItemQuantityReq req) {
+    public CartItem updateCartItemQuantity(String userId, String itemId, ItemQuantityUpdateRequest req) {
         CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
                 .orElseThrow(() -> new CartNotFoundException(String.format(
                         "Cart not found by user ID: %s", userId
                 )));
 
-        CartItemEntity cie = ce.getItems().stream().filter(i ->
-                i.getId().equals(UUID.fromString(itemId))).findFirst().get();
+        CartItemEntity cie = ce.getItems().stream()
+                .filter(i -> i.getId().toString().equals(itemId))
+                .findFirst().orElseThrow(() -> new CartItemNotFoundException(String.format(
+                        "Cart item not found by ID: %s", itemId
+                )));
 
-        ce.setTotalPrice(ce.getTotalPrice().subtract(cie.getSubtotal()));
-        ce.setTotalItems(ce.getTotalItems() - cie.getQuantity());
+        Product product;
+        try {
+            product = getProductById(cie.getProductId().toString());
+        } catch (
+                FeignProductNotFoundException e) {
+            ciRepo.delete(cie);
+            throw new ProductNotFoundException(cie.getProductId().toString());
+        }
+
         cie.setQuantity(req.getQuantity());
-        cie.setSubtotal(cie.getProductPrice().multiply(BigDecimal.valueOf(req.getQuantity())));
-        ce.setTotalPrice(ce.getTotalPrice().add(cie.getSubtotal()));
-        ce.setTotalItems(ce.getTotalItems() + req.getQuantity());
-
         cie = ciRepo.save(cie);
-        repo.save(ce);
-        return ciMapper.toModel(cie);
+        return ciMapper.toModel(cie, product);
     }
 
     @Override
-    public void checkoutCart(String userId, CartCheckoutReq cartCheckoutReq) {
-        CartEntity cart = getCartEntityByUserId(userId);
-        if (cart.getItems().size() == 0)
+    public void checkoutCart(String userId, CartCheckoutRequest cartCheckoutReq) {
+        CartEntity ce = repo.findCartByUserId(UUID.fromString(userId))
+                .orElseThrow(() -> new CartNotFoundException(String.format(
+                        "Cart not found for user ID: %s", userId
+                )));
+
+        if (ce.getItems().isEmpty())
             throw new EmptyCartCheckoutException("Cannot checkout with an empty cart");
-        User user = userClient.getUserById(userId).getBody();
-        Address address = userClient.getAddressById(cartCheckoutReq.getAddressId()).getBody();
-        OrderSubmission orderSubmission = new OrderSubmission(user, address, mapper.toModel(cart));
 
-        try {
-            Message jsonMessage = MessageBuilder.withBody(objMapper.writeValueAsBytes(orderSubmission))
-                    .andProperties(MessagePropertiesBuilder.newInstance().setContentType("application/json")
-                            .build()).build();
-            rabbitTemplate.send(RabbitMqConstants.bindingKey, jsonMessage);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Unable to process JSON message");
-        }
+        Cart cart = getProductInfoAndCreateCartModel(ce);
 
-        ciRepo.deleteAll(cart.getItems());
-        cart.getItems().clear();
-        repo.save(cart);
+        OrderCreateMessage orderCreateMessage = OrderCreateMessage.builder()
+                .userId(userId)
+                .cardId(cartCheckoutReq.getCardId())
+                .addressId(cartCheckoutReq.getAddressId())
+                .totalPrice(cart.getTotalPrice())
+                .itemCount(cart.getTotalItems())
+                .items(cart.getItems())
+                .build();
+
+        messagePublisher.sendOrderCreateMessage(orderCreateMessage);
+        ce.getItems().clear();
+        repo.save(ce);
     }
 
+
+    private CartEntity getCartEntityByUserId(String userId) {
+        Optional<CartEntity> ceo = repo.findCartByUserId(UUID.fromString(userId));
+
+        CartEntity cart;
+        if (ceo.isEmpty()) {
+            cart = CartEntity.builder()
+                    .userId(UUID.fromString(userId))
+                    .build();
+            cart = repo.save(cart);
+        } else
+            cart = ceo.get();
+
+        return cart;
+    }
+
+    private Product getProductById(String productId) {
+        ResponseEntity<Product> res = prodClient.getProductById(productId);
+        return res.getBody();
+    }
+
+    private List<Product> getProductsByIds(List<String> productIds) {
+        ResponseEntity<List<Product>> res = prodClient.getProductsByIds(new BatchProductIdRequest(productIds));
+        List<Product> products = res.getBody();
+
+        return products.stream().filter(p -> p.getActiveStatus().equals(ActiveStatus.ACTIVE))
+                .filter(p -> p.getStock() > 0).toList();
+    }
+
+    private Map<String, Product> createProductMap(List<Product> products) {
+        return products.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
+    }
+
+    private void updateCartItemAndProductLinks(CartEntity cartEntity, Map<String, Product> productMap) {
+        // using streams to first filter out items that do not exist in the product map (item
+        // that was removed from the product database) then filter out items that are out of
+        // stock
+        List<CartItemEntity> itemsToRemove = cartEntity.getItems().stream()
+            .filter(i -> {
+                Optional<Product> p = Optional.ofNullable(productMap.get(i.getProductId().toString()));
+                if (p.isPresent()) {
+                    if (p.get().getStock() == 0) return true;
+                    if (p.get().getActiveStatus().equals(ActiveStatus.INACTIVE)) return true;
+                    else {
+                        if (i.getQuantity() > p.get().getStock()) {
+                            i.setQuantity(p.get().getStock());
+                        }
+                        return false;
+                    }
+                } else {
+                    return true;
+                }
+            }).toList();
+        cartEntity.getItems().removeAll(itemsToRemove);
+        repo.save(cartEntity);
+    }
+
+    private Cart getProductInfoAndCreateCartModel(CartEntity cartEntity) {
+        if (cartEntity.getItems().isEmpty()) return mapper.toModel(cartEntity);
+
+        List<Product> cartItemProducts = getProductsByIds(
+                cartEntity.getItems().stream().map(i ->
+                        i.getProductId().toString()).toList());
+
+        Map<String, Product> productMap = createProductMap(cartItemProducts);
+        // update cart item and product links to remove unavailable/out of stock
+        // items and items with not enough stock
+        updateCartItemAndProductLinks(cartEntity, productMap);
+
+        if (cartEntity.getItems().isEmpty()) return mapper.toModel(cartEntity);
+        else return mapper.toModel(cartEntity, productMap);
+    }
 }

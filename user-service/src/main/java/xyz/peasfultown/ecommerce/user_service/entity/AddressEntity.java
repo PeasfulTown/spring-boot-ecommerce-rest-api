@@ -15,11 +15,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class AddressEntity {
+    @Builder.Default
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, updatable = false, length = 36)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -43,6 +43,7 @@ public class AddressEntity {
     @Column(name = "postal_code", nullable = false)
     private String postalCode;
 
+    @Builder.Default
     @Column(name = "is_primary", nullable = false)
-    private boolean isPrimary;
+    private boolean isPrimary = false;
 }

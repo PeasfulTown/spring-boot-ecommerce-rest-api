@@ -7,7 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.peasfultown.ecommerce.product_api.model.*;
-import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessageDto;
+import xyz.peasfultown.ecommerce.product_service.dto.ProductStockUpdateMessage;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
 import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 import xyz.peasfultown.ecommerce.product_service.exception.CategoryNotFoundException;
@@ -72,10 +72,10 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     @Override
     public List<Product> getProducts(BatchProductIdRequest req) {
-        if (req.getContent() == null || req.getContent().isEmpty())
+        if (req.getIds() == null || req.getIds().isEmpty())
             return mapper.entityListToModelList(repo.findAll());
 
-        List<UUID> uuids = req.getContent().stream().map(p -> UUID.fromString(p)).toList();
+        List<UUID> uuids = req.getIds().stream().map(p -> UUID.fromString(p)).toList();
         return mapper.entityListToModelList(repo.findAll(hasIdsIn(uuids)));
     }
 
@@ -154,12 +154,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public void updateProductStock(ProductStockUpdateMessageDto dto) {
+    public void updateProductStock(ProductStockUpdateMessage dto) {
         List<ProductEntity> pes = repo.findAllById(
-        dto.getContent().keySet().stream().map(UUID::fromString).toList());
-        assert pes.size() == dto.getContent().size();
+        dto.getProductIdStockMap().keySet().stream().map(UUID::fromString).toList());
+        assert pes.size() == dto.getProductIdStockMap().size();
         pes.forEach(p -> {
-            p.setStock(p.getStock() - dto.getContent().get(p.getId().toString()));
+            p.setStock(p.getStock() - dto.getProductIdStockMap().get(p.getId().toString()));
         });
         repo.saveAll(pes);
     }

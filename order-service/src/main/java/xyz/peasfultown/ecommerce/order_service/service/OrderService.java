@@ -2,23 +2,27 @@ package xyz.peasfultown.ecommerce.order_service.service;
 
 import org.springframework.data.domain.Page;
 import xyz.peasfultown.ecommerce.order_api.model.Order;
-import xyz.peasfultown.ecommerce.order_api.model.UpdateOrderStatusReq;
+import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
+import xyz.peasfultown.ecommerce.order_api.model.OrderUpdateRequest;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderCancellationMessage;
+import xyz.peasfultown.ecommerce.order_service.dto.OrderConfirmationMessage;
 import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
+import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 
 import java.util.List;
 
 public interface OrderService {
-    Page<Order> queryOrders(String userId, String status, Integer page, Integer size);
+    Page<Order> queryOrders(String userId, OrderStatus status, Integer page, Integer size);
 
-    Page<Order> queryOrders(Integer page, Integer size);
+    Order getOrderByUserIdAndOrderId(String userId, String orderId);
 
-    Order getOrderById(String userId, String orderId);
+    Order getOrderByOrderId(String orderId);
 
-    Page<Order> getUserPagedOrdersByUserIdAndOrderStatus(String userId, String status, Integer page, Integer size);
+    void updateOrderStatus(String orderId, OrderUpdateRequest updateRequest);
 
-    List<Order> getOrdersByUserId(String userId);
+    Order createOrder(OrderCreateMessage message);
 
-    void updateOrderStatus(String orderId, UpdateOrderStatusReq updateOrderStatusReq);
+    void confirmOrder(OrderConfirmationMessage message);
 
-    void createOrder(OrderCreateMessage message);
+    void cancelOrder(OrderCancellationMessage message);
 }

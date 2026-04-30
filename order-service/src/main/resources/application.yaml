@@ -25,4 +25,15 @@ spring:
     template:
       default-exchange: ${RABBITMQ_DEFAULT_EXCHANGE}
 
-server.port: 8084
+services:
+  internal-secret: ${SERVICES_INTERNAL_SECRET}
+  user-service:
+    url: ${USER_SERVICE_URL}
+
+server:
+  port: 8084
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false

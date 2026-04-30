@@ -15,6 +15,11 @@ spring:
 
 server.port: 8080
 
+services:
+  internal-secret: ${SERVICES_INTERNAL_SECRET}
+  user-service:
+    url: ${USER_SERVICE_URL}
+
 jwt:
   secret: ${JWT_SECRET}
   expiry:

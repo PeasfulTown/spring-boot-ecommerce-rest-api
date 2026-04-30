@@ -10,6 +10,8 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface AddressMapper {
     @Mapping(target = "userId", source = "user.id")
+    @Mapping(target = "streetNumber", source = "number")
+    @Mapping(target = "streetName", source = "street")
     @Mapping(target = "isPrimary", source = "primary")
     Address toModel(AddressEntity entity);
 

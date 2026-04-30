@@ -1,6 +1,5 @@
 package xyz.peasfultown.ecommerce.auth_service.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import xyz.peasfultown.ecommerce.auth_api.model.Authentication;
@@ -8,13 +7,14 @@ import xyz.peasfultown.ecommerce.auth_api.model.LoginReq;
 import xyz.peasfultown.ecommerce.auth_api.model.NewAccountReq;
 import xyz.peasfultown.ecommerce.auth_api.model.RefreshToken;
 import xyz.peasfultown.ecommerce.auth_service.auth.JwtUtil;
+import xyz.peasfultown.ecommerce.auth_service.client.UserServiceClient;
+import xyz.peasfultown.ecommerce.auth_service.dto.UserCreateRequest;
 import xyz.peasfultown.ecommerce.auth_service.entity.AccountEntity;
 import xyz.peasfultown.ecommerce.auth_service.entity.RefreshTokenEntity;
 import xyz.peasfultown.ecommerce.auth_service.entity.RoleEnum;
 import xyz.peasfultown.ecommerce.auth_service.exception.AccountAlreadyExistsException;
 import xyz.peasfultown.ecommerce.auth_service.exception.InvalidAccountCredentialsException;
 import xyz.peasfultown.ecommerce.auth_service.exception.InvalidRefreshTokenException;
-import xyz.peasfultown.ecommerce.auth_service.mapper.AccountMapper;
 import xyz.peasfultown.ecommerce.auth_service.repository.AuthRepository;
 import xyz.peasfultown.ecommerce.auth_service.repository.RefreshTokenRepository;
 
@@ -27,17 +27,17 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refRepo;
     private final RefreshTokenService refService;
     private final PasswordEncoder passwordEncoder;
-    private final AccountMapper mapper;
     private final JwtUtil jwtUtil;
+    private final UserServiceClient userClient;
 
 
-    public AuthServiceImpl(AuthRepository repo, RefreshTokenRepository refRepo, RefreshTokenRepository refRepo1, RefreshTokenService refService, PasswordEncoder passwordEncoder, AccountMapper mapper, JwtUtil jwtUtil) {
+    public AuthServiceImpl(AuthRepository repo, RefreshTokenRepository refRepo, RefreshTokenRepository refRepo1, RefreshTokenService refService, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, UserServiceClient userClient) {
         this.repo = repo;
         this.refRepo = refRepo1;
         this.refService = refService;
         this.passwordEncoder = passwordEncoder;
-        this.mapper = mapper;
         this.jwtUtil = jwtUtil;
+        this.userClient = userClient;
     }
 
     @Override
@@ -55,11 +55,18 @@ public class AuthServiceImpl implements AuthService {
                 .role(RoleEnum.USER)
                 .build();
 
+        UserCreateRequest req = UserCreateRequest.builder()
+                .id(ae.getId().toString())
+                .email(ae.getEmail())
+                .firstName(newAccountReq.getFirstName())
+                .lastName(newAccountReq.getLastName())
+                .build();
+
+        userClient.createUser(req);
+
         ae = repo.save(ae);
 
-        return new Authentication()
-                .accessToken(jwtUtil.generateAccessToken(ae))
-                .refreshToken(refService.createRefreshToken(ae));
+        return buildAuthenticationObject(ae);
     }
 
     @Override
@@ -75,38 +82,22 @@ public class AuthServiceImpl implements AuthService {
                     loginReq.getEmail()
             ));
 
-        return new Authentication()
-                .accessToken(jwtUtil.generateAccessToken(ae))
-                .refreshToken(refService.createRefreshToken(ae));
+        return buildAuthenticationObject(ae);
     }
 
     @Override
     public Authentication renewAccessToken(RefreshToken refreshToken) {
-        try {
-            UUID.fromString(refreshToken.getToken());
-        } catch (IllegalArgumentException e) {
-            throw new InvalidRefreshTokenException(e.getMessage());
-        }
+        RefreshTokenEntity rte = refService.validateRefreshToken(refreshToken.getToken());
+        rte.setRevoked(true);
+        refRepo.save(rte);
+        return buildAuthenticationObject(rte.getAccount());
+    }
 
+    private Authentication buildAuthenticationObject(AccountEntity ae) {
+        return Authentication.builder()
+                .accessToken(jwtUtil.generateAccessToken(ae))
+                .refreshToken(refService.createRefreshToken(ae).getToken().toString())
+                .build();
 
-        RefreshTokenEntity rte =
-                refRepo.findRefreshTokenByToken(UUID.fromString(refreshToken.getToken()))
-                        .orElseThrow(() -> new InvalidRefreshTokenException(
-                                "Invalid refresh token"
-                        ));
-
-        if (rte.isRevoked())
-            throw new InvalidRefreshTokenException(
-                    "Use of revoked token"
-            );
-
-        if (rte.getExpiresAt().isBefore(Instant.now()))
-            throw new InvalidRefreshTokenException(
-                    "Token expired"
-            );
-
-        return new Authentication()
-                .accessToken(jwtUtil.generateAccessToken(rte.getAccount()))
-                .refreshToken(refreshToken.getToken());
     }
 }

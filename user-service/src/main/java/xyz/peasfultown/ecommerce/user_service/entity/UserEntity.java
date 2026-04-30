@@ -6,6 +6,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,13 +35,28 @@ public class UserEntity {
     @Column(name = "phone", length = 10, nullable = false)
     private String phone;
 
+    @Builder.Default
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
+    @Builder.Default
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
-    @OneToMany(mappedBy = "user")
-    private List<AddressEntity> addresses;
+    @Builder.Default
+    @OneToMany(
+        mappedBy = "user",
+        cascade = CascadeType.ALL
+    )
+    private List<AddressEntity> addresses = new ArrayList<>();
 
+    public void addAddress(AddressEntity ae) {
+        ae.setUser(this);
+        this.addresses.add(ae);
+    }
+
+    public void addAddresses(List<AddressEntity> aes) {
+        aes.forEach(ae -> ae.setUser(this));
+        this.getAddresses().addAll(aes);
+    }
 }

@@ -119,6 +119,16 @@
 
 		<!-- ### TESTCONTAINERS DEPENDENCIES ### -->
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>rabbitmq</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>mysql</artifactId>
 			<scope>test</scope>
@@ -222,6 +232,9 @@
 							<generateApis>true</generateApis>
 							<output>${project.build.directory}/generated-sources/ecommerce</output>
 							<supportingFilesToGenerate>ApiUtil.java,pom.xml</supportingFilesToGenerate>
+							<schemaMappings>
+								<schemaMapping>ProblemDetail=org.springframework.http.ProblemDetail</schemaMapping>
+							</schemaMappings>
 						</configuration>
 					</execution>
 				</executions>

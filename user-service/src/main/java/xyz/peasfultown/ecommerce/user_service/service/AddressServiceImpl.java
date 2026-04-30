@@ -2,8 +2,8 @@ package xyz.peasfultown.ecommerce.user_service.service;
 
 import org.springframework.stereotype.Service;
 import xyz.peasfultown.ecommerce.user_api.model.Address;
-import xyz.peasfultown.ecommerce.user_api.model.NewAddressReq;
-import xyz.peasfultown.ecommerce.user_api.model.UpdateAddressReq;
+import xyz.peasfultown.ecommerce.user_api.model.AddressCreateRequest;
+import xyz.peasfultown.ecommerce.user_api.model.AddressUpdateRequest;
 import xyz.peasfultown.ecommerce.user_service.entity.AddressEntity;
 import xyz.peasfultown.ecommerce.user_service.entity.UserEntity;
 import xyz.peasfultown.ecommerce.user_service.exception.AddressNotFoundException;
@@ -29,7 +29,7 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Override
-    public Address createAddress(String userId, NewAddressReq newAddressReq) {
+    public Address createAddress(String userId, AddressCreateRequest newAddressReq) {
         UserEntity ue = userRepo.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new UserNotFoundException(String.format(
                         "User not found by ID: %s", userId
@@ -52,7 +52,16 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Override
-    public Address getUserAddressById(String userId, String addressId) {
+    public Address getAddress(String addressId) {
+        AddressEntity ae = repo.findById(UUID.fromString(addressId))
+                .orElseThrow(() -> new AddressNotFoundException(String.format(
+                        "Address not found by ID: %s", addressId
+                )));
+        return mapper.toModel(ae);
+    }
+
+    @Override
+    public Address getAddress(String userId, String addressId) {
         AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), UUID.fromString(addressId))
                 .orElseThrow(() -> new AddressNotFoundException(String.format(
                         "Address not found by ID: %s", addressId
@@ -62,32 +71,63 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Override
-    public Address updateAddressById(String userId, String addressId, UpdateAddressReq updateAddressReq) {
-        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), UUID.fromString(addressId))
+    public Address updateAddress(String addressId, AddressUpdateRequest req) {
+        AddressEntity ae = repo.findById(UUID.fromString(addressId))
                 .orElseThrow(() -> new AddressNotFoundException(String.format(
                         "Address not found by ID: %s", addressId
                 )));
 
-        if (Objects.nonNull(updateAddressReq.getNumber()))
-            ae.setNumber(updateAddressReq.getNumber());
-        if (Objects.nonNull(updateAddressReq.getStreet()))
-            ae.setStreet(updateAddressReq.getStreet());
-        if (Objects.nonNull(updateAddressReq.getCity()))
-            ae.setCity(updateAddressReq.getCity());
-        if (Objects.nonNull(updateAddressReq.getState()))
-            ae.setState(updateAddressReq.getState());
-        if (Objects.nonNull(updateAddressReq.getCountry()))
-            ae.setCountry(updateAddressReq.getCountry());
-        if (Objects.nonNull(updateAddressReq.getPostalCode()))
-            ae.setPostalCode(updateAddressReq.getPostalCode());
-        if (Objects.nonNull(updateAddressReq.getIsPrimary()))
-            ae.setPrimary(updateAddressReq.getIsPrimary());
+        if (Objects.nonNull(req.getNumber()))
+            ae.setNumber(req.getNumber());
+        if (Objects.nonNull(req.getStreet()))
+            ae.setStreet(req.getStreet());
+        if (Objects.nonNull(req.getCity()))
+            ae.setCity(req.getCity());
+        if (Objects.nonNull(req.getState()))
+            ae.setState(req.getState());
+        if (Objects.nonNull(req.getCountry()))
+            ae.setCountry(req.getCountry());
+        if (Objects.nonNull(req.getPostalCode()))
+            ae.setPostalCode(req.getPostalCode());
 
         return mapper.toModel(ae);
     }
 
     @Override
-    public void deleteAddressById(String userId, String addressId) {
+    public Address updateAddress(String userId, String addressId, AddressUpdateRequest req) {
+        AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), UUID.fromString(addressId))
+                .orElseThrow(() -> new AddressNotFoundException(String.format(
+                        "Address not found by ID: %s", addressId
+                )));
+
+        if (Objects.nonNull(req.getNumber()))
+            ae.setNumber(req.getNumber());
+        if (Objects.nonNull(req.getStreet()))
+            ae.setStreet(req.getStreet());
+        if (Objects.nonNull(req.getCity()))
+            ae.setCity(req.getCity());
+        if (Objects.nonNull(req.getState()))
+            ae.setState(req.getState());
+        if (Objects.nonNull(req.getCountry()))
+            ae.setCountry(req.getCountry());
+        if (Objects.nonNull(req.getPostalCode()))
+            ae.setPostalCode(req.getPostalCode());
+
+        return mapper.toModel(ae);
+    }
+
+    @Override
+    public void deleteAddress(String addressId) {
+        AddressEntity ae = repo.findById(UUID.fromString(addressId))
+                .orElseThrow(() -> new AddressNotFoundException(String.format(
+                        "Address not found by ID: %s", addressId
+                )));
+
+        repo.delete(ae);
+    }
+
+    @Override
+    public void deleteAddress(String userId, String addressId) {
         AddressEntity ae = repo.findAddressByUserAndId(UUID.fromString(userId), UUID.fromString(addressId))
                 .orElseThrow(() -> new AddressNotFoundException(String.format(
                         "Address not found by ID: %s", addressId
@@ -97,14 +137,14 @@ public class AddressServiceImpl implements AddressService {
     }
 
     @Override
-    public List<Address> getAllUserAddresses(String userId) {
+    public List<Address> getAddressesByUserId(String userId) {
         List<AddressEntity> aes = repo.findAddressesByUserId(UUID.fromString(userId));
 
         return mapper.toModel(aes);
     }
 
     @Override
-    public void setAddressAsPrimaryById(String userId, String addressId) {
+    public void setAddressAsPrimary(String userId, String addressId) {
         List<AddressEntity> aes = repo.findAddressesByUserId(UUID.fromString(userId));
         aes.stream().forEach(a -> {
             if (a.getId().toString().equals(addressId)) a.setPrimary(true);

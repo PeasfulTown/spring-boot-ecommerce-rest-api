@@ -9,6 +9,6 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProductStockUpdateMessageDto {
-    Map<String, Integer> content;
+public class ProductStockUpdateMessage {
+    Map<String, Integer> productIdStockMap;
 }

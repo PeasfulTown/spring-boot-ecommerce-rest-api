@@ -21,4 +21,17 @@ public interface CartItemRepository extends JpaRepository<CartItemEntity, UUID> 
             where ci.cart.id = :cartId
             """)
     List<CartItemEntity> findCartItemsByCartId(UUID cartId);
+
+    @Query("""
+            select ci from CartItemEntity ci
+            where ci.cart.userId = :userId
+            """)
+    List<CartItemEntity> findCartItemsByUserId(UUID userId);
+
+    @Query("""
+            select ci from CartItemEntity ci
+            where ci.cart.userId = :userId
+            and ci.productId = :productId
+            """)
+    Optional<CartItemEntity> findCartItemByUserIdAndProductId(UUID userId, UUID productId);
 }

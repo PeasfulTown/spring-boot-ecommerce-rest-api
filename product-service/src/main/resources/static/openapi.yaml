@@ -436,7 +436,7 @@ components:
     BatchProductIdRequest:
       type: object
       properties:
-        content:
+        ids:
           type: array
           items:
             type: string
@@ -460,6 +460,7 @@ components:
         stock:
           type: integer
           format: int32
+        # TODO: remove stock status
         stockStatus:
           $ref: '#/components/schemas/StockStatus'
         activeStatus:

@@ -2,13 +2,13 @@ package xyz.peasfultown.ecommerce.cart_service.dto;
 
 import lombok.*;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
-    private String id;
-    private String email;
-    private String phone;
+public class BatchProductIdRequest {
+    private List<String> ids;
 }

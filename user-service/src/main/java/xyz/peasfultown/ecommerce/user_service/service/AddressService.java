@@ -1,22 +1,28 @@
 package xyz.peasfultown.ecommerce.user_service.service;
 
 import xyz.peasfultown.ecommerce.user_api.model.Address;
-import xyz.peasfultown.ecommerce.user_api.model.NewAddressReq;
-import xyz.peasfultown.ecommerce.user_api.model.UpdateAddressReq;
+import xyz.peasfultown.ecommerce.user_api.model.AddressCreateRequest;
+import xyz.peasfultown.ecommerce.user_api.model.AddressUpdateRequest;
 
 import java.util.List;
-import java.util.UUID;
 
 public interface AddressService {
-    Address createAddress(String userId, NewAddressReq newAddressReq);
+    Address createAddress(String userId, AddressCreateRequest createReq);
 
-    Address getUserAddressById(String userId, String addressId);
+    Address getAddress(String addressId);
 
-    Address updateAddressById(String userId, String addressId, UpdateAddressReq updateAddressReq);
+    Address getAddress(String userId, String addressId);
 
-    void deleteAddressById(String userId, String addressId);
+    Address updateAddress(String addressIdPath, AddressUpdateRequest updateReq);
 
-    List<Address> getAllUserAddresses(String userId);
+    Address updateAddress(String userId, String addressId, AddressUpdateRequest updateAddressReq);
 
-    void setAddressAsPrimaryById(String userId, String addressId);
+    void deleteAddress(String addressIdPath);
+
+    void deleteAddress(String userId, String addressId);
+
+    List<Address> getAddressesByUserId(String userId);
+
+    void setAddressAsPrimary(String userId, String addressId);
+
 }

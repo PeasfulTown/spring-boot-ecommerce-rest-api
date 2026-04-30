@@ -18,30 +18,31 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class CartEntity {
+    @Builder.Default
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "id", nullable = false, updatable = false)
-    private UUID id;
+    private UUID id = UUID.randomUUID();
 
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
 
     @Builder.Default
-    @Column(name = "total_items", nullable = false)
-    private int totalItems = 0;
-
-    @Builder.Default
-    @Column(name = "total_price", nullable = false)
-    private BigDecimal totalPrice = BigDecimal.ZERO;
-
-    @Builder.Default
     @OneToMany(
             mappedBy = "cart",
             cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.EAGER
+            orphanRemoval = true
     )
     private List<CartItemEntity> items = new ArrayList<>();
+
+    public void addItems(List<CartItemEntity> items) {
+        items.forEach(i -> i.setCart(this));
+        this.getItems().addAll(items);
+    }
+
+    public void addItem(CartItemEntity item) {
+        item.setCart(this);
+        this.getItems().add(item);
+    }
 }

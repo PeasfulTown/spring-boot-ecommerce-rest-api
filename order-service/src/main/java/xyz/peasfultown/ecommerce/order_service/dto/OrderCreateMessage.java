@@ -13,14 +13,8 @@ import java.util.List;
 @Builder
 public class OrderCreateMessage {
     private String userId;
-    private String email;
-    private String phone;
-    private String streetNumber;
-    private String streetName;
-    private String city;
-    private String state;
-    private String country;
-    private String postalCode;
+    private String cardId;
+    private String addressId;
     private BigDecimal totalPrice;
     private int itemCount;
     private List<OrderItem> items;

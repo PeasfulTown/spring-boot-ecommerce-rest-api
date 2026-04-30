@@ -14,7 +14,7 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import xyz.peasfultown.ecommerce.order_service.dto.OrderCreateMessage;
+import xyz.peasfultown.ecommerce.order_service.dto.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,9 +48,53 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public Binding cart_checkout_order_createOrder_routingKey(Queue order_createOrder_queue,
-                                                              TopicExchange exchange) {
+    public Queue order_confirmOrder_queue() {
+        return new Queue(RabbitMqConstants.order_confirmOrder_queue);
+    }
+
+    @Bean
+    public Queue order_cancelOrder_queue() {
+        return new Queue(RabbitMqConstants.order_cancelOrder_queue);
+    }
+
+    @Bean
+    public Queue payment_confirmPayment_queue() {
+        return new Queue(RabbitMqConstants.payment_confirmPayment_queue);
+    }
+
+    @Bean
+    public Queue product_updateStock_queue() {
+        return new Queue(RabbitMqConstants.product_updateStock_queue);
+    }
+
+    @Bean
+    public Binding cart_checkout_order_createOrder_binding(Queue order_createOrder_queue,
+                                                           TopicExchange exchange) {
         return BindingBuilder.bind(order_createOrder_queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_createOrder_routingKey);
+    }
+
+    @Bean
+    public Binding cart_checkout_order_confirmOrder_binding(Queue order_confirmOrder_queue,
+                                                            TopicExchange exchange) {
+        return BindingBuilder.bind(order_confirmOrder_queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_confirmOrder_routingKey);
+    }
+
+    @Bean
+    public Binding cart_checkout_order_cancelOrder_binding(Queue order_cancelOrder_queue,
+                                                           TopicExchange exchange) {
+        return BindingBuilder.bind(order_cancelOrder_queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_cancelOrder_routingKey);
+    }
+
+    @Bean
+    public Binding cart_checkout_payment_confirmPayment_binding(Queue payment_confirmPayment_queue,
+                                                                TopicExchange exchange) {
+        return BindingBuilder.bind(payment_confirmPayment_queue).to(exchange).with(RabbitMqConstants.cart_checkout_payment_confirmPayment_routingKey);
+    }
+
+    @Bean
+    public Binding cart_checkout_product_updateStock_binding(Queue product_updateStock_queue,
+                                                            TopicExchange exchange) {
+        return BindingBuilder.bind(product_updateStock_queue).to(exchange).with(RabbitMqConstants.cart_checkout_product_updateStock_routingKey);
     }
 
     @Bean
@@ -65,6 +109,10 @@ public class RabbitMqConfig {
         DefaultClassMapper classMapper = new DefaultClassMapper();
         Map<String, Class<?>> idClassMap = new HashMap<>();
         idClassMap.put("OrderCreateMessage", OrderCreateMessage.class);
+        idClassMap.put("CardIdMessage", PaymentConfirmationMessage.class);
+        idClassMap.put("OrderConfirmationMessage", OrderConfirmationMessage.class);
+        idClassMap.put("OrderCancellationMessage", OrderCancellationMessage.class);
+        idClassMap.put("ProductStockUpdateMessage", ProductStockUpdateMessage.class);
         classMapper.setIdClassMapping(idClassMap);
         return classMapper;
     }

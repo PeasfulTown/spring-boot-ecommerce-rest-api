@@ -38,7 +38,7 @@ public class OrderItemEntity {
     @Column(name = "subtotal", nullable = false)
     private BigDecimal subtotal;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "order_id", nullable = false)
     private OrderEntity order;
 }

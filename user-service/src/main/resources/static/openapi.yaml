@@ -16,8 +16,11 @@ tags:
     description: Account management (login, register, logout, refresh token)
   - name: address
     description: User address management
+  - name: card
+    description: User payment card management
 
 paths:
+
   /api/v1/users:
 
     post:
@@ -25,261 +28,207 @@ paths:
       summary: Create user record
       operationId: createUser
       requestBody:
-        description: New user request body object
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewUserReq'
+        $ref: '#/components/requestBodies/UserCreateRequest'
       responses:
         '201':
-          description: User creation successful
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
+          $ref: '#/components/responses/SingleUser'
+
     get:
       tags: [ user ]
-      summary: Get all user record (admin role)
+      summary: Get all user record (admin only)
       operationId: getUsers
       parameters:
         - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/PageNumberQuery'
+        - $ref: '#/components/parameters/PageSizeQuery'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+          $ref: '#/components/responses/PagedUser'
         '403':
-          description: User does not have suitable role
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/{id}:
-
-    delete:
-      tags: [ user ]
-      summary: Delete user record (admin role)
-      operationId: deleteUser
-      parameters:
-        - $ref: '#/components/parameters/UserRoleHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Successful user deletion
-          content: {}
-        '404':
-          description: User not found by ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/users/me:
+  /api/v1/users/{userId}:
 
     get:
       tags: [ user ]
       summary: Get user information
-      operationId: getMyUser
+      operationId: getUser
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/UserIdPath'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-                schema:
-                  $ref: '#/components/schemas/User'
+          $ref: '#/components/responses/SingleUser'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
 
     patch:
       tags: [ user ]
       summary: Update user record
-      operationId: updateMyUser
+      operationId: updateUser
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/UserIdPath'
       requestBody:
-        description: User update form object
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUserReq'
+        $ref: '#/components/requestBodies/UserUpdateRequest'
       responses:
         '200':
-          description: Successful user record update
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
+          $ref: '#/components/responses/SingleUser'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
 
     delete:
       tags: [ user ]
       summary: Delete user record
-      operationId: deleteMyUser
+      operationId: deleteUser
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/UserIdPath'
       responses:
         '204':
-          description: Successful user deletion
-          content: {}
+          $ref: '#/components/responses/NoContent'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/me/addresses:
+  /api/v1/users/{userId}/addresses:
 
     post:
       tags: [ address ]
       summary: Create a user address
-      operationId: createMyAddress
+      operationId: createAddress
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserIdPath'
       requestBody:
-        description: New address creation body
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewAddressReq'
+        $ref: '#/components/requestBodies/AddressCreateRequest'
       responses:
         '201':
-          description: Successfully created user address
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
+          $ref: '#/components/responses/SingleAddress'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
 
     get:
       tags: [ address ]
       summary: Get all of a user's address
-      operationId: getAllMyAddresses
+      operationId: getUserAddresses
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/UserIdPath'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Address'
+          $ref: '#/components/responses/BatchAddress'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/me/addresses/{id}:
+  /api/v1/users/addresses/{addressId}:
 
     get:
       tags: [ address ]
       summary: Get a user's address by ID
-      operationId: getMyAddressById
+      operationId: getAddress
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/AddressIdPath'
       responses:
         '200':
-          description: Successful read
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
+          $ref: '#/components/responses/SingleAddress'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
         '404':
-          description: Address not found by ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-
-    delete:
-      tags: [ address ]
-      summary: Delete a user's address by ID
-      operationId: deleteMyAddressById
-      parameters:
-        - $ref: '#/components/parameters/UserIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Successful address delete
-          content: {}
-        '404':
-          description: Address not found by ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/ProblemDetail'
 
     patch:
       tags: [ address ]
       summary: Update a user's address by ID
-      operationId: updateMyAddressById
+      operationId: updateAddress
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/AddressIdPath'
       requestBody:
-        description: Update address request body object
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateAddressReq'
+        $ref: '#/components/requestBodies/AddressUpdateRequest'
       responses:
         '200':
-          description: Successful address update
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
+          $ref: '#/components/responses/SingleAddress'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
         '404':
-          description: Address not found by ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/me/addresses/{id}/primary:
+    delete:
+      tags: [ address ]
+      summary: Delete a user's address by ID
+      operationId: deleteAddress
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/AddressIdPath'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+
+  /api/v1/users/addresses/{addressId}/primary:
     post:
       tags: [ address ]
       summary: Set user address as primary
-      operationId: setMyAddressAsPrimaryById
+      operationId: setAddressAsPrimary
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/AddressIdPath'
       responses:
         '204':
-          description: Successfully set address as primary
-          content: {}
+          $ref: '#/components/responses/NoContent'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
         '404':
-          description: Address not found by ID
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+          $ref: '#/components/responses/ProblemDetail'
+
+  /api/v1/users/order-info:
+    post:
+      tags: [ user ]
+      summary: Fetch user information and address information (internal services use)
+      operationId: getOrderInfo
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/InternalServiceSecretHeader'
+      requestBody:
+        $ref: '#/components/requestBodies/OrderInformationRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderInformation'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
 
 components:
 
   parameters:
+
     UserIdHeader:
       name: X-User-Id
       in: header
       required: true
       schema:
         type: string
+
     UserRoleHeader:
       name: X-User-Role
       in: header
@@ -290,9 +239,136 @@ components:
           - ADMIN
           - CUSTOMER
 
+    InternalServiceSecretHeader:
+      name: X-Internal-Service-Secret
+      in: header
+      required: true
+      schema:
+        type: string
+
+    UserIdPath:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    AddressIdPath:
+      name: addressId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    PageNumberQuery:
+      name: pageNumber
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 0
+
+    PageSizeQuery:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 10
+
+  requestBodies:
+
+    UserCreateRequest:
+      description: Request object to create new user
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserCreateRequest'
+
+    UserUpdateRequest:
+      description: Request object to update user information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UserUpdateRequest'
+
+    AddressCreateRequest:
+      description: Request object to create new address
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AddressCreateRequest'
+
+    AddressUpdateRequest:
+      description: Request object to update address
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/AddressUpdateRequest'
+
+    OrderInformationRequest:
+      description: Request for user and address information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OrderInformationRequest'
+
+  responses:
+
+    NoContent:
+      description: No content response
+      content: {}
+
+    ProblemDetail:
+      description: Api error detail response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+
+    SingleUser:
+      description: User object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/User'
+
+    PagedUser:
+      description: Paged user response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PagedUserResponse'
+
+
+    SingleAddress:
+      description: Address object
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Address'
+
+    BatchAddress:
+      description: Addresses
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Address'
+
+    OrderInformation:
+      description: User and address information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/OrderInformation'
+
   schemas:
 
-    PagedResponsePage:
+    ResponsePage:
       type: object
       properties:
         size:
@@ -312,7 +388,7 @@ components:
           type: array
           items: {}
         page:
-          $ref: '#/components/schemas/PagedResponsePage'
+          $ref: '#/components/schemas/ResponsePage'
 
     PagedUserResponse:
       allOf:
@@ -324,23 +400,25 @@ components:
               items:
                 $ref: '#/components/schemas/User'
 
-    ErrorResponse:
+    ProblemDetail:
       type: object
       properties:
+        title:
+          type: string
+          example: "Not Found"
         status:
           type: integer
-        error:
+          example: 404
+        detail:
           type: string
-        message:
+          example: "Order not found with id: 123"
+        instance:
           type: string
-        path:
-          type: string
-        timestamp:
-          type: string
-          format: date-time
-      required: [ status, message ]
+          format: uri
+          example: "/api/v1/orders/123"
+      required: [ status ]
 
-    NewUserReq:
+    UserCreateRequest:
       type: object
       required: [ id, email, firstName, lastName, phone ]
       properties:
@@ -356,7 +434,7 @@ components:
         phone:
           type: string
 
-    UpdateUserReq:
+    UserUpdateRequest:
       type: object
       properties:
         email:
@@ -390,7 +468,7 @@ components:
           type: string
           format: date-time
 
-    NewAddressReq:
+    AddressCreateRequest:
       type: object
       description: Request body for adding a new address
       required: [ number, street, city, state, country, postalCode ]
@@ -417,7 +495,7 @@ components:
           example: 78701
 
 
-    UpdateAddressReq:
+    AddressUpdateRequest:
       type: object
       description: Request body for updating address
       properties:
@@ -440,8 +518,6 @@ components:
         postalCode:
           type: string
           example: 97201
-        isPrimary:
-          type: boolean
 
     Address:
       type: object
@@ -452,10 +528,10 @@ components:
         userId:
           description: Identifier of the user this address belongs to
           type: string
-        number:
+        streetNumber:
           type: string
           description: Street number
-        street:
+        streetName:
           type: string
           description: Street name
         city:
@@ -468,3 +544,25 @@ components:
           type: string
         isPrimary:
           type: boolean
+
+    OrderInformation:
+      type: object
+      properties:
+        userId:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          $ref: '#/components/schemas/Address'
+
+    OrderInformationRequest:
+      type: object
+      properties:
+        userId:
+          type: string
+        addressId:
+          type: string

@@ -1,32 +1,39 @@
 package xyz.peasfultown.ecommerce.user_service.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import xyz.peasfultown.ecommerce.user_api.model.NewUserReq;
-import xyz.peasfultown.ecommerce.user_api.model.UpdateUserReq;
-import xyz.peasfultown.ecommerce.user_api.model.User;
+import org.springframework.transaction.annotation.Transactional;
+import xyz.peasfultown.ecommerce.user_api.model.*;
+import xyz.peasfultown.ecommerce.user_service.entity.AddressEntity;
 import xyz.peasfultown.ecommerce.user_service.entity.UserEntity;
+import xyz.peasfultown.ecommerce.user_service.exception.AddressNotFoundException;
 import xyz.peasfultown.ecommerce.user_service.exception.UserAlreadyExistsException;
 import xyz.peasfultown.ecommerce.user_service.exception.UserNotFoundException;
+import xyz.peasfultown.ecommerce.user_service.mapper.AddressMapper;
 import xyz.peasfultown.ecommerce.user_service.mapper.UserMapper;
 import xyz.peasfultown.ecommerce.user_service.repository.UserRepository;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class UserServiceImpl implements UserService {
     private final UserRepository repo;
     private final UserMapper mapper;
+    private final AddressMapper addressMapper;
 
-    public UserServiceImpl(UserRepository repo, UserMapper mapper) {
+    public UserServiceImpl(UserRepository repo, UserMapper mapper, AddressMapper addressMapper) {
         this.repo = repo;
         this.mapper = mapper;
+        this.addressMapper = addressMapper;
     }
 
     @Override
-    public User createUser(NewUserReq req) {
+    public User createUser(UserCreateRequest req) {
         repo.findUserByEmail(req.getEmail())
                 .ifPresent(u -> {
                     throw new UserAlreadyExistsException(String.format(
@@ -49,10 +56,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(String xUserId, UpdateUserReq req) {
-        UserEntity ue = repo.findById(UUID.fromString(xUserId))
+    public User updateUser(String userId, UserUpdateRequest req) {
+        UserEntity ue = repo.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new UserNotFoundException(String.format(
-                        "User not found by ID: %s", xUserId
+                        "User not found by ID: %s", userId
                 )));
 
         if (Objects.nonNull(req.getEmail()))
@@ -68,29 +75,53 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User getUser(String xUserId) {
-        UserEntity ue = repo.findById(UUID.fromString(xUserId))
+    public User getUser(String userId) {
+        UserEntity ue = repo.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new UserNotFoundException(String.format(
-                        "User not found by ID: %s", xUserId
+                        "User not found by ID: %s", userId
                 )));
 
         return mapper.toModel(ue);
     }
 
     @Override
-    public void deleteUserById(String xUserId) {
-        UserEntity ue = repo.findById(UUID.fromString(xUserId))
+    public void deleteUser(String userId) {
+        UserEntity ue = repo.findById(UUID.fromString(userId))
                 .orElseThrow(() -> new UserNotFoundException(String.format(
-                        "User not found by ID: %s", xUserId
+                        "User not found by ID: %s", userId
                 )));
 
         repo.delete(ue);
     }
 
     @Override
-    public List<User> getAllUsers() {
-        List<UserEntity> ues = repo.findAll();
+    public Page<User> getUsersPaged(int pageNumber, int pageSize) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<UserEntity> ue = repo.findAll(pageable);
+        return ue.map(mapper::toModel);
+    }
 
-        return mapper.toModel(ues);
+    @Override
+    public OrderInformation getOrderInfo(OrderInformationRequest req) {
+        UserEntity ue = repo.findById(UUID.fromString(req.getUserId()))
+                .orElseThrow(() -> new UserNotFoundException(String.format(
+                        "User not found by ID: %s", req.getUserId()
+                )));
+
+        AddressEntity ae = ue.getAddresses().stream().filter(a ->
+            a.getId().toString().equals(req.getAddressId())).findFirst()
+                .orElseThrow(() -> new AddressNotFoundException(String.format(
+                        "Address not found by ID: %s", req.getAddressId()
+                )));
+
+        OrderInformation oi = OrderInformation.builder()
+                .userId(ue.getId().toString())
+                .email(ue.getEmail())
+                .phone(ue.getPhone())
+                .fullName(ue.getFirstName() + " " + ue.getLastName())
+                .address(addressMapper.toModel(ae))
+                .build();
+
+        return oi;
     }
 }
