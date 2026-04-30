@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,8 +18,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.wiremock.spring.ConfigureWireMock;
 import org.wiremock.spring.EnableWireMock;
 import org.wiremock.spring.InjectWireMock;
-import xyz.peasfultown.ecommerce.cart_api.model.*;
-import xyz.peasfultown.ecommerce.cart_service.client.ProductServiceClient;
+import xyz.peasfultown.ecommerce.cart_api.model.ActiveStatus;
+import xyz.peasfultown.ecommerce.cart_api.model.CartCheckoutRequest;
+import xyz.peasfultown.ecommerce.cart_api.model.CartItem;
+import xyz.peasfultown.ecommerce.cart_api.model.Product;
 import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
 import xyz.peasfultown.ecommerce.cart_service.dto.BatchProductIdRequest;
 import xyz.peasfultown.ecommerce.cart_service.dto.OrderCreateMessage;
@@ -87,6 +88,7 @@ public class AsyncServiceFunctionTest {
                 .name("Product 1")
                 .description("Original product 1")
                 .price(BigDecimal.valueOf(111.11))
+                .stock(50)
                 .imageUrls(List.of(
                         "http://wwww.images.com/products/product1_1.jpg",
                         "http://wwww.images.com/products/product1_2.jpg",
@@ -99,6 +101,7 @@ public class AsyncServiceFunctionTest {
                 .name("Product 2")
                 .description("Original product 2")
                 .price(BigDecimal.valueOf(222.22))
+                .stock(50)
                 .imageUrls(List.of(
                         "http://wwww.images.com/products/product2_1.jpg",
                         "http://wwww.images.com/products/product2_2.jpg",
@@ -111,6 +114,7 @@ public class AsyncServiceFunctionTest {
                 .name("Product 3")
                 .description("Original product 3")
                 .price(BigDecimal.valueOf(333.33))
+                .stock(50)
                 .imageUrls(List.of(
                         "http://wwww.images.com/products/product3_1.jpg",
                         "http://wwww.images.com/products/product3_2.jpg",

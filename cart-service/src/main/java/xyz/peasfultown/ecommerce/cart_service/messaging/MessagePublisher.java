@@ -9,7 +9,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.ErrorResponseException;
 import xyz.peasfultown.ecommerce.cart_service.config.RabbitMqConstants;
 import xyz.peasfultown.ecommerce.cart_service.dto.OrderCreateMessage;
 import xyz.peasfultown.ecommerce.cart_service.exception.CustomErrorResponseException;
@@ -31,7 +30,7 @@ public class MessagePublisher {
                     .setHeader("__TypeId__", OrderCreateMessage.class.getSimpleName())
                     .setContentType(MessageProperties.CONTENT_TYPE_JSON)
                     .build();
-            rabbitTemplate.send(RabbitMqConstants.cart_checkout_routingKey, message);
+            rabbitTemplate.send(RabbitMqConstants.cart_checkout_order_createOrder_routingKey, message);
         } catch (JsonProcessingException e) {
             throw new CustomErrorResponseException(HttpStatus.INTERNAL_SERVER_ERROR,
             "Unable to send OrderCreateMessage as json");

@@ -48,7 +48,7 @@ public class RabbitMqConfig {
 
     @Bean
     public Binding binding(TopicExchange exchange, Queue queue) {
-        return BindingBuilder.bind(queue).to(exchange).with(RabbitMqConstants.cart_checkout_routingKey);
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMqConstants.cart_checkout_order_createOrder_routingKey);
     }
 
     @Bean
