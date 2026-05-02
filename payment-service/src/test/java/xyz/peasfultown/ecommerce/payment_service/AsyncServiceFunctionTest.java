@@ -185,6 +185,7 @@ class AsyncServiceFunctionTest {
 			new ParameterizedTypeReference<OrderConfirmationMessage>() {});
 		assertEquals(messageToHandle.getOrderId(), sentMessage.getOrderId());
 		assertNotNull(sentMessage.getPaymentId());
+		assertNotNull(sentMessage.getPaidAt());
 	}
 
 	@Test
