@@ -6,18 +6,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import xyz.peasfultown.ecommerce.order_api.model.OrderItem;
 import xyz.peasfultown.ecommerce.order_api.model.Order;
+import xyz.peasfultown.ecommerce.order_api.model.OrderItem;
 import xyz.peasfultown.ecommerce.order_api.model.OrderStatus;
 import xyz.peasfultown.ecommerce.order_api.model.OrderUpdateRequest;
 import xyz.peasfultown.ecommerce.order_service.client.UserServiceClient;
 import xyz.peasfultown.ecommerce.order_service.dto.*;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderEntity;
 import xyz.peasfultown.ecommerce.order_service.entity.OrderItemEntity;
-import xyz.peasfultown.ecommerce.order_service.exception.CustomErrorResponseException;
 import xyz.peasfultown.ecommerce.order_service.exception.OrderNotFoundException;
 import xyz.peasfultown.ecommerce.order_service.mapper.OrderMapper;
 import xyz.peasfultown.ecommerce.order_service.repository.OrderItemRepository;
@@ -101,43 +99,38 @@ public class OrderServiceImpl implements OrderService {
                 .addressId(message.getAddressId())
             .build();
 
-        try {
-            OrderInformation orderInformation = userClient.getOrderInformation(req);
+        OrderInformation orderInformation = userClient.getOrderInformation(req);
 
-            OrderEntity oe = OrderEntity.builder()
+        OrderEntity oe = OrderEntity.builder()
+                .id(UUID.randomUUID())
+                .userId(UUID.fromString(orderInformation.getUserId()))
+                .fullName(orderInformation.getFullName())
+                .email(orderInformation.getEmail())
+                .phone(orderInformation.getPhone())
+                .streetNumber(orderInformation.getAddress().getStreetNumber())
+                .streetName(orderInformation.getAddress().getStreetName())
+                .city(orderInformation.getAddress().getCity())
+                .state(orderInformation.getAddress().getState())
+                .country(orderInformation.getAddress().getCountry())
+                .postalCode(orderInformation.getAddress().getPostalCode())
+                .totalPrice(message.getTotalPrice())
+                .status(OrderEntity.OrderStatus.PROCESSING)
+                .itemCount(message.getItemCount())
+                .build();
+
+        for (OrderItem i : message.getItems()) {
+            OrderItemEntity oie = OrderItemEntity.builder()
                     .id(UUID.randomUUID())
-                    .userId(UUID.fromString(orderInformation.getUserId()))
-                    .fullName(orderInformation.getFullName())
-                    .email(orderInformation.getEmail())
-                    .phone(orderInformation.getPhone())
-                    .streetNumber(orderInformation.getAddress().getStreetNumber())
-                    .streetName(orderInformation.getAddress().getStreetName())
-                    .city(orderInformation.getAddress().getCity())
-                    .state(orderInformation.getAddress().getState())
-                    .country(orderInformation.getAddress().getCountry())
-                    .postalCode(orderInformation.getAddress().getPostalCode())
-                    .totalPrice(message.getTotalPrice())
-                    .status(OrderEntity.OrderStatus.PROCESSING)
-                    .itemCount(message.getItemCount())
+                    .productId(UUID.fromString(i.getProductId()))
+                    .productName(i.getProductName())
+                    .productPrice(i.getProductPrice())
+                    .quantity(i.getQuantity())
+                    .subtotal(i.getSubtotal())
                     .build();
-
-            for (OrderItem i : message.getItems()) {
-                OrderItemEntity oie = OrderItemEntity.builder()
-                        .id(UUID.randomUUID())
-                        .productId(UUID.fromString(i.getProductId()))
-                        .productName(i.getProductName())
-                        .productPrice(i.getProductPrice())
-                        .quantity(i.getQuantity())
-                        .subtotal(i.getSubtotal())
-                        .build();
-                oe.addItem(oie);
-            }
-
-            return mapper.toModel(repo.save(oe));
-        } catch (FeignUserServiceNotFoundException e) {
-            throw new CustomErrorResponseException(HttpStatus.BAD_REQUEST,
-                    "Unable to create order, query to user service returned not found");
+            oe.addItem(oie);
         }
+
+        return mapper.toModel(repo.save(oe));
     }
 
     @Override

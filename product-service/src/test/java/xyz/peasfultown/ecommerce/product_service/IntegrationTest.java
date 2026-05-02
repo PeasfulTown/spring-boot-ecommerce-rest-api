@@ -167,7 +167,7 @@ public class IntegrationTest {
     @Test
     void getProductBatchById_return200() throws Exception {
         BatchProductIdRequest req = BatchProductIdRequest.builder()
-                .content(List.of(
+                .ids(List.of(
                         p2.getId().toString(),
                         p3.getId().toString()
                 ))
@@ -180,7 +180,7 @@ public class IntegrationTest {
                 .andExpect(jsonPath("$", hasSize(2)))
         ;
 
-        req.content(List.of());
+        req.ids(List.of());
 
         mvc.perform(post("/api/v1/products/batch")
                         .contentType(MediaType.APPLICATION_JSON)

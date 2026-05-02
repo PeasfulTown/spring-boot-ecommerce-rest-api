@@ -200,6 +200,89 @@ paths:
         '404':
           $ref: '#/components/responses/ProblemDetail'
 
+  /api/v1/users/{userId}/cards:
+    get:
+      tags: [ card ]
+      summary: Get user's saved payment cards
+      operationId: getPaymentCards
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '200':
+          $ref: '#/components/responses/BatchCard'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+
+    post:
+      tags: [ card ]
+      summary: Save user's payment card
+      operationId: createPaymentCard
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/CardCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/SingleCard'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+
+  /api/v1/users/{userId}/cards/{cardId}:
+    get:
+      tags: [ card ]
+      summary: Get user's payment card by ID
+      operationId: getPaymentCard
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+        - $ref: '#/components/parameters/CardIdPath'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleCard'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+
+    delete:
+      tags: [ card ]
+      summary: Delete user's payment card by ID
+      operationId: deletePaymentCard
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+        - $ref: '#/components/parameters/CardIdPath'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+
+  /api/v1/users/{userId}/cards/{cardId}/default:
+    patch:
+      tags: [ card ]
+      summary: Set card as the default payment card
+      operationId: setPaymentCardAsDefault
+      parameters:
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+        - $ref: '#/components/parameters/CardIdPath'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+
   /api/v1/users/order-info:
     post:
       tags: [ user ]
@@ -217,6 +300,20 @@ paths:
           $ref: '#/components/responses/ProblemDetail'
         '403':
           $ref: '#/components/responses/ProblemDetail'
+
+  /api/v1/users/cards/{cardId}/token:
+    get:
+      tags: [ card ]
+      summary: Get payment card token (internal services use)
+      operationId: getPaymentCardToken
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/InternalServiceSecretHeader'
+        - $ref: '#/components/parameters/CardIdPath'
+      responses:
+        '200':
+          $ref: '#/components/responses/CardToken'
+
 
 components:
 
@@ -255,6 +352,13 @@ components:
 
     AddressIdPath:
       name: addressId
+      in: path
+      required: true
+      schema:
+        type: string
+
+    CardIdPath:
+      name: cardId
       in: path
       required: true
       schema:
@@ -308,6 +412,13 @@ components:
           schema:
             $ref: '#/components/schemas/AddressUpdateRequest'
 
+    CardCreateRequest:
+      description: Request object to save a new payment card
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CardCreateRequest'
+
     OrderInformationRequest:
       description: Request for user and address information
       content:
@@ -359,12 +470,35 @@ components:
             items:
               $ref: '#/components/schemas/Address'
 
+    SingleCard:
+      description: Card information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Card'
+
+    BatchCard:
+      description: Cards information
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Card'
+
     OrderInformation:
       description: User and address information
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/OrderInformation'
+
+    CardToken:
+      description: Card token information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CardToken'
 
   schemas:
 
@@ -544,6 +678,83 @@ components:
           type: string
         isPrimary:
           type: boolean
+
+    CardType:
+      type: string
+      enum:
+        - VISA
+        - AMEX
+        - MASTERCARD
+
+    Card:
+      type: object
+      description: Payment card
+      properties:
+        id:
+          type: string
+        cardHolderName:
+          type: string
+        lastFourDigits:
+          type: string
+          minLength: 4
+          maxLength: 4
+        cardType:
+          $ref: '#/components/schemas/CardType'
+        expiryMonth:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+        expiryYear:
+          type: integer
+          format: int32
+          minimum: 1900
+          maximum: 2100
+        isDefault:
+          type: boolean
+
+    CardCreateRequest:
+      type: object
+      description: Payment card creation request
+      required: [ cardHolderName, cardNumber, expiryMonth, expiryYear, cvv ]
+      properties:
+        cardHolderName:
+          type: string
+        cardNumber:
+          type: string
+        expiryMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+        expiryYear:
+          type: integer
+          minimum: 1000
+          maximum: 9999
+        cvv:
+          type: integer
+
+    CardToken:
+      type: object
+      description: Card token information
+      properties:
+        cardId:
+          type: string
+        token:
+          type: string
+        lastFourDigits:
+          type: string
+          minLength: 4
+          maxLength: 4
+        cardType:
+          $ref: '#/components/schemas/CardType'
+        expiryMonth:
+          type: integer
+          minimum: 1
+          maximum: 31
+        expiryYear:
+          type: integer
+          minimum: 1000
+          maximum: 9999
 
     OrderInformation:
       type: object

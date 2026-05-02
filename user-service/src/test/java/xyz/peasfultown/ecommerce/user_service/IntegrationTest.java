@@ -18,8 +18,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import xyz.peasfultown.ecommerce.user_api.model.*;
 import xyz.peasfultown.ecommerce.user_service.entity.AddressEntity;
+import xyz.peasfultown.ecommerce.user_service.entity.CardEntity;
 import xyz.peasfultown.ecommerce.user_service.entity.UserEntity;
 import xyz.peasfultown.ecommerce.user_service.repository.AddressRepository;
+import xyz.peasfultown.ecommerce.user_service.repository.CardRepository;
 import xyz.peasfultown.ecommerce.user_service.repository.UserRepository;
 
 import java.time.Instant;
@@ -64,6 +66,9 @@ public class IntegrationTest {
 
     @Autowired
     private AddressRepository addrRepo;
+
+    @Autowired
+    private CardRepository cardRepo;
 
     @Value("${services.internal-secret}")
     private String internalSecret;
@@ -400,5 +405,162 @@ public class IntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void createPaymentCard_returns201_whenValidRequest() throws Exception {
+        CardCreateRequest req = CardCreateRequest.builder()
+                .cardHolderName("John Smith")
+                .cardNumber("4242424242424242")
+                .cvv(123)
+                .expiryMonth(3)
+                .expiryYear(2028)
+                .build();
+        mvc.perform(post("/api/v1/users/{userId}/cards", ue1.getId().toString())
+                .header("X-User-Id", ue1.getId().toString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.cardHolderName").value(req.getCardHolderName()))
+                .andExpect(jsonPath("$.lastFourDigits").value(req.getCardNumber().substring(req.getCardNumber().length() - 4)))
+                .andExpect(jsonPath("$.expiryMonth").value(req.getExpiryMonth()))
+                .andExpect(jsonPath("$.expiryYear").value(req.getExpiryYear()))
+                ;
+        List<CardEntity> ces = cardRepo.findCardsByUserId(ue1.getId());
+        assertThat(ces).isNotEmpty();
+        CardEntity ce = ces.get(0);
+        assertEquals(req.getCardHolderName(), ce.getCardHolderName());
+        assertEquals(req.getExpiryMonth(), ce.getExpiryMonth());
+        assertEquals(req.getExpiryYear(), ce.getExpiryYear());
+        assertEquals(CardEntity.CardType.VISA, ce.getCardType());
+        assertEquals("4242", ce.getLastFourDigits());
+        assertNotNull(ce.getToken());
+    }
+
+    @Test
+    void getCard_returns200_whenValidRequest() throws Exception {
+        CardEntity ce = CardEntity.builder()
+                .cardHolderName("John Smith")
+                .lastFourDigits("1234")
+                .cardType(CardEntity.CardType.VISA)
+                .expiryMonth(1)
+                .expiryYear(2028)
+                .token("tok_visa_1234_abcd1234")
+                .user(ue1)
+        .build();
+        ce = cardRepo.save(ce);
+        mvc.perform(get("/api/v1/users/{userId}/cards/{cardId}",
+                    ue1.getId().toString(),
+                    ce.getId().toString())
+                .header("X-User-Id", ue1.getId().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ce.getId().toString()))
+                .andExpect(jsonPath("$.cardHolderName").value(ce.getCardHolderName()))
+                .andExpect(jsonPath("$.lastFourDigits").value(ce.getLastFourDigits()))
+                .andExpect(jsonPath("$.cardType").value(ce.getCardType().getValue()))
+                .andExpect(jsonPath("$.expiryMonth").value(ce.getExpiryMonth()))
+                .andExpect(jsonPath("$.expiryYear").value(ce.getExpiryYear()))
+                ;
+    }
+
+    @Test
+    void getCard_returns403_whenUserDoesntOwnCard() throws Exception {
+        CardEntity ce = CardEntity.builder()
+                .cardHolderName("John Smith")
+                .lastFourDigits("1234")
+                .cardType(CardEntity.CardType.VISA)
+                .expiryMonth(1)
+                .expiryYear(2028)
+                .token("tok_visa_1234_abcd1234")
+                .user(ue1)
+                .build();
+        ce = cardRepo.save(ce);
+        mvc.perform(get("/api/v1/users/{userId}/cards/{cardId}",
+                        ue1.getId().toString(),
+                        ce.getId().toString())
+                        .header("X-User-Id", ue2.getId().toString()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void setCardAsDefault_savesInDb() throws Exception {
+        CardEntity ce1 = CardEntity.builder()
+                .cardHolderName("John Smith")
+                .lastFourDigits("1234")
+                .cardType(CardEntity.CardType.VISA)
+                .expiryMonth(1)
+                .expiryYear(2028)
+                .token("tok_visa_1234_abcd1234")
+                .isDefault(true)
+                .user(ue1)
+                .build();
+        CardEntity ce2 = CardEntity.builder()
+                .cardHolderName("John Smith")
+                .lastFourDigits("1235")
+                .cardType(CardEntity.CardType.VISA)
+                .expiryMonth(2)
+                .expiryYear(2029)
+                .token("tok_visa_1235_abcd1235")
+                .isDefault(false)
+                .user(ue1)
+                .build();
+
+        cardRepo.saveAll(List.of(ce1, ce2));
+        mvc.perform(patch("/api/v1/users/{userId}/cards/{cardId}/default",
+                ue1.getId().toString(),
+                ce2.getId().toString())
+                .header("X-User-Id", ue1.getId().toString()))
+                .andExpect(status().isNoContent());
+
+        CardEntity ce = cardRepo.findById(ce2.getId()).orElseThrow();
+        assertTrue(ce.isDefault());
+        ce = cardRepo.findById(ce1.getId()).orElseThrow();
+        assertFalse(ce.isDefault());
+    }
+
+    @Test
+    void deleteCard_deletesFromDb() throws Exception {
+        CardEntity ce = CardEntity.builder()
+                .cardHolderName("John Smith")
+                .lastFourDigits("1234")
+                .cardType(CardEntity.CardType.VISA)
+                .expiryMonth(1)
+                .expiryYear(2028)
+                .token("tok_visa_1234_abcd1234")
+                .user(ue1)
+                .build();
+
+        cardRepo.save(ce);
+        mvc.perform(delete("/api/v1/users/{userId}/cards/{cardId}",
+                        ue1.getId().toString(),
+                        ce.getId().toString())
+                .header("X-User-Id", ue1.getId().toString()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getCardToken_returns200_whenValidRequest() throws Exception {
+        CardEntity ce = CardEntity.builder()
+                .cardHolderName("John Smith")
+                .lastFourDigits("1234")
+                .cardType(CardEntity.CardType.VISA)
+                .expiryMonth(1)
+                .expiryYear(2028)
+                .token("tok_visa_1234_abcd1234")
+                .user(ue1)
+                .build();
+        cardRepo.save(ce);
+        mvc.perform(get("/api/v1/users/cards/{cardId}/token", ce.getId().toString())
+                .header("X-Internal-Service-Secret", internalSecret)
+                .header("X-User-Role", "ADMIN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cardId").value(ce.getId().toString()))
+                .andExpect(jsonPath("$.token").value(ce.getToken()))
+                .andExpect(jsonPath("$.lastFourDigits").value(ce.getLastFourDigits()))
+                .andExpect(jsonPath("$.cardType").value(ce.getCardType().getValue()))
+                .andExpect(jsonPath("$.expiryMonth").value(ce.getExpiryMonth()))
+                .andExpect(jsonPath("$.expiryYear").value(ce.getExpiryYear()))
+                ;
     }
 }

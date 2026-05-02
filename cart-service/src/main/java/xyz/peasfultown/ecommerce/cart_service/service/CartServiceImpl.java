@@ -55,12 +55,7 @@ public class CartServiceImpl implements CartService {
         CartEntity ce = getCartEntityByUserId(userId);
 
         Product product;
-        try {
-            product = getProductById(req.getProductId());
-        } catch (
-                FeignProductNotFoundException e) {
-            throw new ProductNotFoundException(req.getProductId());
-        }
+        product = getProductById(req.getProductId());
 
         // if product not active or out of stock, throw exception
         if (product.getStock() == 0)

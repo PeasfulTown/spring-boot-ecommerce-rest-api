@@ -330,7 +330,7 @@ public class AsyncServiceFunctionTest {
         oe.addItems(List.of(oie1, oie2, oie3));
         orderRepo.save(oe);
 
-        OrderCancellationMessage ocm = new OrderCancellationMessage(oe.getId().toString());
+        OrderCancellationMessage ocm = new OrderCancellationMessage(oe.getId().toString(), "sim_txn_abcdef1234567890");
         Message message = MessageBuilder.withBody(oMapper.writeValueAsBytes(ocm))
                 .setHeader("__TypeId__", OrderCancellationMessage.class.getSimpleName())
                 .setContentType(MessageProperties.CONTENT_TYPE_JSON).build();

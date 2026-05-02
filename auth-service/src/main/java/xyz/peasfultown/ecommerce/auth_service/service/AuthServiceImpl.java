@@ -14,12 +14,8 @@ import xyz.peasfultown.ecommerce.auth_service.entity.RefreshTokenEntity;
 import xyz.peasfultown.ecommerce.auth_service.entity.RoleEnum;
 import xyz.peasfultown.ecommerce.auth_service.exception.AccountAlreadyExistsException;
 import xyz.peasfultown.ecommerce.auth_service.exception.InvalidAccountCredentialsException;
-import xyz.peasfultown.ecommerce.auth_service.exception.InvalidRefreshTokenException;
 import xyz.peasfultown.ecommerce.auth_service.repository.AuthRepository;
 import xyz.peasfultown.ecommerce.auth_service.repository.RefreshTokenRepository;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -52,7 +48,7 @@ public class AuthServiceImpl implements AuthService {
         AccountEntity ae = AccountEntity.builder()
                 .email(newAccountReq.getEmail())
                 .password(passwordEncoder.encode(newAccountReq.getPassword()))
-                .role(RoleEnum.USER)
+                .role(RoleEnum.CUSTOMER)
                 .build();
 
         UserCreateRequest req = UserCreateRequest.builder()

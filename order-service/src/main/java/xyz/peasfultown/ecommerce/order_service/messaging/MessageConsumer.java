@@ -37,7 +37,12 @@ public class MessageConsumer {
         log.info("==== ORDER CREATE MESSAGE RECEIVED ====");
         Order order = orderService.createOrder(message);
 
-        messagePublisher.sendPaymentConfirmationMessage(new PaymentConfirmationMessage(order.getId(), message.getCardId()));
+        messagePublisher.sendPaymentConfirmationMessage(
+            new PaymentConfirmationMessage(
+                message.getUserId(),
+                order.getId(),
+                message.getCardId(),
+                order.getTotalPrice()));
     }
 
     @RabbitListener(

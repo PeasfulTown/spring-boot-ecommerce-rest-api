@@ -31,7 +31,7 @@ public class AccountEntity {
 
     @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
-    private RoleEnum role = RoleEnum.USER;
+    private RoleEnum role = RoleEnum.CUSTOMER;
 
     @OneToMany(
         mappedBy = "account",
