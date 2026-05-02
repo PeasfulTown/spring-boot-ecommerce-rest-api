@@ -8,7 +8,6 @@ import io.jsonwebtoken.Jwts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -38,7 +37,6 @@ import xyz.peasfultown.ecommerce.auth_service.service.RefreshTokenService;
 import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -145,7 +143,7 @@ public class IntegrationTest {
 
         assertEquals(ae.getId().toString(), claims.getSubject());
         assertEquals(req.getEmail(), claims.get("email"));
-        assertEquals("ROLE_USER", claims.get("role"));
+        assertEquals("USER", claims.get("role"));
     }
 
     @Test
@@ -175,7 +173,7 @@ public class IntegrationTest {
     void login_shouldReturnTokens_whenValidInput() throws Exception {
         AccountEntity ae = AccountEntity.builder()
                 .email("user@example.com")
-                .role(RoleEnum.USER)
+                .role(RoleEnum.CUSTOMER)
                 .password(passEncoder.encode("password"))
                 .build();
         auRepo.save(ae);
@@ -199,7 +197,7 @@ public class IntegrationTest {
     void login_shouldReturn400_whenWrongPassword() throws Exception {
         AccountEntity ae = AccountEntity.builder()
                 .email("user@example.com")
-                .role(RoleEnum.USER)
+                .role(RoleEnum.CUSTOMER)
                 .password(passEncoder.encode("password"))
                 .build();
 
@@ -222,7 +220,7 @@ public class IntegrationTest {
         AccountEntity ae = AccountEntity.builder()
                 .email("user@example.com")
                 .password(passEncoder.encode("password"))
-                .role(RoleEnum.USER)
+                .role(RoleEnum.CUSTOMER)
                 .build();
         auRepo.save(ae);
 
@@ -262,7 +260,7 @@ public class IntegrationTest {
         AccountEntity ae = AccountEntity.builder()
                 .email("user@example.com")
                 .password(passEncoder.encode("password"))
-                .role(RoleEnum.USER)
+                .role(RoleEnum.CUSTOMER)
                 .build();
         ae = auRepo.save(ae);
         RefreshTokenEntity rte = RefreshTokenEntity.builder()
@@ -290,7 +288,7 @@ public class IntegrationTest {
         AccountEntity ae = AccountEntity.builder()
                 .email("user@example.com")
                 .password(passEncoder.encode("password"))
-                .role(RoleEnum.USER)
+                .role(RoleEnum.CUSTOMER)
                 .build();
         ae = auRepo.save(ae);
         RefreshTokenEntity rte = RefreshTokenEntity.builder()
