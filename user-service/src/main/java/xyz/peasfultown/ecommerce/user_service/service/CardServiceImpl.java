@@ -10,12 +10,14 @@ import xyz.peasfultown.ecommerce.user_api.model.CardToken;
 import xyz.peasfultown.ecommerce.user_api.model.CardType;
 import xyz.peasfultown.ecommerce.user_service.entity.CardEntity;
 import xyz.peasfultown.ecommerce.user_service.entity.UserEntity;
+import xyz.peasfultown.ecommerce.user_service.exception.CardExpiredException;
 import xyz.peasfultown.ecommerce.user_service.exception.CardNotFoundException;
 import xyz.peasfultown.ecommerce.user_service.exception.UserNotFoundException;
 import xyz.peasfultown.ecommerce.user_service.mapper.CardMapper;
 import xyz.peasfultown.ecommerce.user_service.repository.CardRepository;
 import xyz.peasfultown.ecommerce.user_service.repository.UserRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,7 +46,12 @@ public class CardServiceImpl implements CardService {
 
         CardEntity.CardType cardType = detectCardType(req.getCardNumber());
 
-        String token = generateToken(req.getCardNumber(), cardType);
+        String token = generateToken(req.getCardNumber(),
+                req.getCvv(),
+                req.getExpiryMonth(),
+                req.getExpiryYear(),
+                cardType
+                );
 
 
         CardEntity ce = CardEntity.builder()
@@ -55,7 +62,7 @@ public class CardServiceImpl implements CardService {
                 .expiryMonth(req.getExpiryMonth())
                 .expiryYear(req.getExpiryYear())
                 .token(token)
-        .build();
+                .build();
         cardRepo.save(ce);
         return cardMapper.toModel(ce);
     }
@@ -100,13 +107,30 @@ public class CardServiceImpl implements CardService {
         cardRepo.delete(ce);
     }
 
-    public String generateToken(@NotNull String cardNumber, CardEntity.CardType cardType) {
+    public String generateToken(String cardNumber,
+                                Integer cvv,
+                                Integer expiryMonth,
+                                Integer expiryYear,
+                                CardEntity.CardType cardType) {
         String lastFour = cardNumber.substring(cardNumber.length() - 4);
-        return String.format("tok_%s_%s_%s",
+
+        String cvvHash = Integer.toHexString(cvv.hashCode());
+        String random = UUID.randomUUID().toString().substring(0, 8);
+        return String.format("tok_%s_%s_%s%s_%s_%s",
                 cardType.name().toLowerCase(),
                 lastFour,
-                UUID.randomUUID().toString().replace("-", "")
-                        .substring(0, 8));
+                String.valueOf(expiryMonth),
+                String.valueOf(expiryYear),
+                cvvHash,
+                random
+        );
+    }
+
+    private void validateCardExpiry(Integer expiryMonth, Integer expiryYear) {
+        LocalDate expiry = LocalDate.of(expiryYear, expiryMonth, 1);
+
+        if (expiry.isBefore(LocalDate.now()))
+            throw new CardExpiredException("Unable to add card, card already expired");
     }
 
     private CardEntity.CardType detectCardType(@NotNull String cardNumber) {
@@ -129,10 +153,11 @@ public class CardServiceImpl implements CardService {
         CardToken token = CardToken.builder()
                 .cardId(ce.getId().toString())
                 .token(ce.getToken())
+                .lastFourDigits(ce.getLastFourDigits())
                 .cardType(CardType.valueOf(ce.getCardType().getValue()))
                 .expiryMonth(ce.getExpiryMonth())
                 .expiryYear(ce.getExpiryYear())
-        .build();
+                .build();
 
         return token;
     }

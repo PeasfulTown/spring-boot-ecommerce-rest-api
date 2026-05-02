@@ -557,6 +557,7 @@ public class IntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.cardId").value(ce.getId().toString()))
                 .andExpect(jsonPath("$.token").value(ce.getToken()))
+                .andExpect(jsonPath("$.lastFourDigits").value(ce.getLastFourDigits()))
                 .andExpect(jsonPath("$.cardType").value(ce.getCardType().getValue()))
                 .andExpect(jsonPath("$.expiryMonth").value(ce.getExpiryMonth()))
                 .andExpect(jsonPath("$.expiryYear").value(ce.getExpiryYear()))
