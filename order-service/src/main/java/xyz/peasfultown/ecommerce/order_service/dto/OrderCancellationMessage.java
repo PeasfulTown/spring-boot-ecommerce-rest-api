@@ -9,4 +9,5 @@ import lombok.Setter;
 @AllArgsConstructor
 public class OrderCancellationMessage {
     private String orderId;
+    private String paymentId;
 }
