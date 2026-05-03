@@ -133,8 +133,9 @@ public class CartServiceImpl implements CartService {
         } catch (ProductServiceClientException e) {
             if (e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
                 ciRepo.delete(cie);
-            }
-            throw new ProductNotFoundException(cie.getProductId().toString());
+                throw new ProductNotFoundException(cie.getProductId().toString());
+            } else throw new ProductServiceClientException(HttpStatus.valueOf(e.getStatusCode().value()), e.getMessage());
+
         }
 
         cie.setQuantity(req.getQuantity());

@@ -17,6 +17,7 @@ import xyz.peasfultown.ecommerce.auth_service.entity.RoleEnum;
 import xyz.peasfultown.ecommerce.auth_service.exception.AccountAlreadyExistsException;
 import xyz.peasfultown.ecommerce.auth_service.exception.InvalidAccountCredentialsException;
 import xyz.peasfultown.ecommerce.auth_service.exception.InvalidRefreshTokenException;
+import xyz.peasfultown.ecommerce.auth_service.exception.UserServiceClientException;
 import xyz.peasfultown.ecommerce.auth_service.repository.AuthRepository;
 import xyz.peasfultown.ecommerce.auth_service.repository.RefreshTokenRepository;
 
