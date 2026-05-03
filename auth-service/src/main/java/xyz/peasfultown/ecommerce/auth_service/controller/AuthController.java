@@ -36,4 +36,10 @@ public class AuthController implements AuthApi {
     public ResponseEntity<Authentication> renewAccessToken(RefreshToken refreshToken) throws Exception {
         return ok(service.renewAccessToken(refreshToken));
     }
+
+    @Override
+    public ResponseEntity<Void> logout(Authentication authentication) throws Exception {
+        service.logout(authentication);
+        return status(HttpStatus.NO_CONTENT).build();
+    }
 }

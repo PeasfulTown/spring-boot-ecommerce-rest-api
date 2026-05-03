@@ -1,5 +1,7 @@
 package xyz.peasfultown.ecommerce.auth_service.service;
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import xyz.peasfultown.ecommerce.auth_api.model.Authentication;
@@ -14,9 +16,13 @@ import xyz.peasfultown.ecommerce.auth_service.entity.RefreshTokenEntity;
 import xyz.peasfultown.ecommerce.auth_service.entity.RoleEnum;
 import xyz.peasfultown.ecommerce.auth_service.exception.AccountAlreadyExistsException;
 import xyz.peasfultown.ecommerce.auth_service.exception.InvalidAccountCredentialsException;
+import xyz.peasfultown.ecommerce.auth_service.exception.InvalidRefreshTokenException;
 import xyz.peasfultown.ecommerce.auth_service.repository.AuthRepository;
 import xyz.peasfultown.ecommerce.auth_service.repository.RefreshTokenRepository;
 
+import java.util.UUID;
+
+@Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
     private final AuthRepository repo;
@@ -56,6 +62,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(ae.getEmail())
                 .firstName(newAccountReq.getFirstName())
                 .lastName(newAccountReq.getLastName())
+                .phone(newAccountReq.getPhone())
                 .build();
 
         userClient.createUser(req);
@@ -95,5 +102,17 @@ public class AuthServiceImpl implements AuthService {
                 .refreshToken(refService.createRefreshToken(ae).getToken().toString())
                 .build();
 
+    }
+
+    @Override
+    public void logout(Authentication authentication) {
+        RefreshTokenEntity rte = refRepo.findRefreshTokenByToken(UUID.fromString(authentication.getRefreshToken()))
+                .orElseThrow(() -> new InvalidRefreshTokenException(String.format(
+                    "Invalid refresh token: not registered in database"
+                )));
+
+        rte.setRevoked(true);
+
+        refRepo.save(rte);
     }
 }

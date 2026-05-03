@@ -12,4 +12,6 @@ public interface AuthService {
     Authentication getToken(@Valid LoginReq loginReq);
 
     Authentication renewAccessToken(RefreshToken refreshToken);
+
+    void logout(Authentication authentication);
 }

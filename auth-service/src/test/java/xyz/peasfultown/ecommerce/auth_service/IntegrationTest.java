@@ -39,8 +39,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -143,7 +143,7 @@ public class IntegrationTest {
 
         assertEquals(ae.getId().toString(), claims.getSubject());
         assertEquals(req.getEmail(), claims.get("email"));
-        assertEquals("USER", claims.get("role"));
+        assertEquals("CUSTOMER", claims.get("role"));
     }
 
     @Test
@@ -182,7 +182,7 @@ public class IntegrationTest {
                 .password("password")
                 .build();
 
-        mockMvc.perform(post("/api/v1/auth/token")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -207,7 +207,7 @@ public class IntegrationTest {
                 .email("user@example.com")
                 .password("wrongpass");
 
-        mockMvc.perform(post("/api/v1/auth/token")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objMapper.writeValueAsString(lreq)))
                 .andExpect(status().isBadRequest())
@@ -306,5 +306,39 @@ public class IntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void logout_invalidatesRefreshToken() throws Exception {
+        AccountEntity ae = AccountEntity.builder()
+                .email("user@example.com")
+                .password(passEncoder.encode("password"))
+                .role(RoleEnum.CUSTOMER)
+                .build();
+
+        ae = auRepo.save(ae);
+
+        RefreshTokenEntity rte = RefreshTokenEntity.builder()
+                .token(UUID.randomUUID())
+                .account(ae)
+                .createdAt(Instant.now())
+                .expiresAt(Instant.now().plusMillis(900000))
+                .revoked(false)
+                .build();
+
+        refreshTokenRepository.save(rte);
+
+        Authentication auth = Authentication.builder()
+                                .refreshToken(rte.getToken().toString())
+                                        .build();
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objMapper.writeValueAsString(auth)))
+                .andExpect(status().isNoContent())
+                ;
+
+        rte = refreshTokenRepository.findRefreshTokenByToken(rte.getToken()).orElseThrow();
+        assertTrue(rte.isRevoked());
     }
 }
