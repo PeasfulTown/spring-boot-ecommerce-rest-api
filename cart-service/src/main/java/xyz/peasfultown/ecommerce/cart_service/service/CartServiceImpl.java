@@ -1,5 +1,6 @@
 package xyz.peasfultown.ecommerce.cart_service.service;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -129,9 +130,10 @@ public class CartServiceImpl implements CartService {
         Product product;
         try {
             product = getProductById(cie.getProductId().toString());
-        } catch (
-                FeignProductNotFoundException e) {
-            ciRepo.delete(cie);
+        } catch (ProductServiceClientException e) {
+            if (e.getStatusCode().isSameCodeAs(HttpStatus.NOT_FOUND)) {
+                ciRepo.delete(cie);
+            }
             throw new ProductNotFoundException(cie.getProductId().toString());
         }
 
