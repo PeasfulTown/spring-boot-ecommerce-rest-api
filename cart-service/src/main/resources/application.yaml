@@ -18,7 +18,7 @@ spring:
 
   rabbitmq:
     host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_POST:5672}
+    port: ${RABBITMQ_PORT:5672}
     virtual-host: /
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
@@ -30,4 +30,4 @@ services:
   product-service:
     url: ${PRODUCT_SERVICE_URL}
 
-server.port: 8083
+server.port: ${SERVER_PORT}
