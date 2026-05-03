@@ -3,7 +3,6 @@ package xyz.peasfultown.ecommerce.payment_service.client;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import org.springframework.http.HttpStatus;
-import xyz.peasfultown.ecommerce.payment_service.exception.UserServiceClientInternalServiceErrorException;
 import xyz.peasfultown.ecommerce.payment_service.exception.UserServiceClientException;
 
 import java.io.IOException;
