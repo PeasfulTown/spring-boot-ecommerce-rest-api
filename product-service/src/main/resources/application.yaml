@@ -1,4 +1,5 @@
 spring:
+
   profiles.active: ${ACTIVE_PROFILE}
 
   application:
@@ -18,11 +19,11 @@ spring:
 
   rabbitmq:
     host: ${RABBITMQ_HOST}
-    port: ${RABBITMQ_POST:5672}
+    port: ${RABBITMQ_PORT:5672}
     virtual-host: /
     username: ${RABBITMQ_USERNAME}
     password: ${RABBITMQ_PASSWORD}
     template:
       default-exchange: ${RABBITMQ_DEFAULT_EXCHANGE}
 
-server.port: 8081
+server.port: ${SERVER_PORT}

@@ -50,11 +50,6 @@ public class ProductEntity {
     @Column(name = "stock", nullable = false)
     private int stock = 0;
 
-    @Setter(AccessLevel.NONE)
-    @Column(name = "stock_status", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private StockStatus stockStatus;
-
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;
@@ -67,19 +62,6 @@ public class ProductEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
 
-    public StockStatus calculateStockStatus() {
-        if (stock == 0)
-            return StockStatus.OUT_OF_STOCK;
-        else if (stock <= 20)
-            return StockStatus.LOW_STOCK;
-
-        return StockStatus.IN_STOCK;
-    }
-
-    public void setStockStatus() {
-        this.stockStatus = calculateStockStatus();
-    }
-
     public enum ActiveStatus {
         ACTIVE, INACTIVE;
 
@@ -90,13 +72,4 @@ public class ProductEntity {
         }
     }
 
-    public enum StockStatus {
-        OUT_OF_STOCK, IN_STOCK, LOW_STOCK;
-
-        public static StockStatus fromValue(String value) {
-            for (StockStatus s : StockStatus.values())
-                if (value.equalsIgnoreCase(s.name())) return s;
-            throw new IllegalArgumentException(String.format("Unexpected StockStatus value: %s", value));
-        }
-    }
 }

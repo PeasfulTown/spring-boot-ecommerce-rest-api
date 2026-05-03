@@ -2,11 +2,14 @@ package xyz.peasfultown.ecommerce.product_service.repository.specification;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+import xyz.peasfultown.ecommerce.product_api.model.StockStatus;
 import xyz.peasfultown.ecommerce.product_service.entity.CategoryEntity;
 import xyz.peasfultown.ecommerce.product_service.entity.ProductEntity;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,11 +42,17 @@ public class ProductSpecification {
                 minPrice == null ? null : cb.greaterThan(root.get("price"), minPrice);
     }
 
-    public static Specification<ProductEntity> hasStockStatus(List<ProductEntity.StockStatus> stockStatus) {
+    public static Specification<ProductEntity> hasStockStatus(List<StockStatus> stockStatus) {
         return (root, query, cb) -> {
             if (stockStatus == null || stockStatus.isEmpty()) return null;
-
-            return root.get("stockStatus").in(stockStatus);
+            List<Predicate> predicates = new ArrayList<>();
+            if (stockStatus.contains(StockStatus.OUT_OF_STOCK))
+                predicates.add(cb.equal(root.get("stock"), 0));
+            if (stockStatus.contains(StockStatus.LOW_STOCK))
+                predicates.add(cb.lessThan(root.get("stock"), 20));
+            if (stockStatus.contains(StockStatus.IN_STOCK))
+                predicates.add(cb.greaterThan(root.get("stock"), 0));
+            return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 }

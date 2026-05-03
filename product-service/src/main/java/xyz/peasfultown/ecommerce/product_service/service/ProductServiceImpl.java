@@ -64,7 +64,7 @@ public class ProductServiceImpl implements ProductService {
                         .and(hasCategoryName(category))
                         .and(hasPriceLowerThan(maxPrice))
                         .and(hasPriceGreaterThan(minPrice))
-                        .and(hasStockStatus(stockStatusListOf(stockStatus))),
+                        .and(hasStockStatus(stockStatus)),
                 pageable
         ).map(mapper::toModel);
     }
@@ -77,12 +77,6 @@ public class ProductServiceImpl implements ProductService {
 
         List<UUID> uuids = req.getIds().stream().map(p -> UUID.fromString(p)).toList();
         return mapper.entityListToModelList(repo.findAll(hasIdsIn(uuids)));
-    }
-
-    private List<ProductEntity.StockStatus> stockStatusListOf(List<StockStatus> pssl) {
-        if (pssl == null || pssl.isEmpty()) return null;
-        return pssl.stream().map(s ->
-                        ProductEntity.StockStatus.fromValue(s.getValue())).toList();
     }
 
     @Override
@@ -99,7 +93,6 @@ public class ProductServiceImpl implements ProductService {
                 .stock(newProductReq.getStock() == null ? 0 : newProductReq.getStock())
                 .category(ce)
                 .build();
-        pe.setStockStatus();
         return mapper.toModel(repo.save(pe));
     }
 
@@ -123,7 +116,6 @@ public class ProductServiceImpl implements ProductService {
                     ProductEntity.ActiveStatus.fromValue(req.getActiveStatus().getValue()));
         if (Objects.nonNull(req.getStock())) {
             pe.setStock(req.getStock());
-            pe.setStockStatus();
         }
         if (Objects.nonNull(req.getCategory())) {
             CategoryEntity ce = caRepo.findCategoryByName(req.getCategory())
