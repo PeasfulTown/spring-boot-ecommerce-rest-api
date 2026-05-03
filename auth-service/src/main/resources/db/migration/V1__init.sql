@@ -2,7 +2,7 @@ create table if not exists `account` (
     id varchar(36) not null default (uuid()),
     email varchar(50) not null unique,
     password varchar(100) not null,
-    role enum('ADMIN', 'USER') default 'USER',
+    role enum('ADMIN', 'CUSTOMER') default 'CUSTOMER',
     primary key (id)
 );
 

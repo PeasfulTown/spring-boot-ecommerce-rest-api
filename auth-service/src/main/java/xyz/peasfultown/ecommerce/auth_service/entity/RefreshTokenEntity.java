@@ -30,12 +30,14 @@ public class RefreshTokenEntity {
     @JdbcTypeCode(SqlTypes.VARCHAR)
     private UUID token;
 
+    @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
     @Column(name = "expires_at", nullable = false, updatable = false)
     private Instant expiresAt;
 
+    @Builder.Default
     @Column(name = "revoked", nullable = false)
     private boolean revoked = false;
 }

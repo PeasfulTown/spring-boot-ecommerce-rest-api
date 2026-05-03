@@ -8,11 +8,10 @@ import xyz.peasfultown.ecommerce.payment_service.client.PaymentGatewaySimulation
 import xyz.peasfultown.ecommerce.payment_service.client.UserServiceClient;
 import xyz.peasfultown.ecommerce.payment_service.dto.*;
 import xyz.peasfultown.ecommerce.payment_service.entity.PaymentEntity;
-import xyz.peasfultown.ecommerce.payment_service.exception.UserServiceClientNotFoundException;
+import xyz.peasfultown.ecommerce.payment_service.exception.UserServiceClientException;
 import xyz.peasfultown.ecommerce.payment_service.messaging.MessagePublisher;
 import xyz.peasfultown.ecommerce.payment_service.repository.PaymentRepository;
 
-import java.math.BigDecimal;
 import java.time.ZoneOffset;
 import java.util.UUID;
 
@@ -45,9 +44,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         try {
             cardToken = userClient.getCardToken(message.getCardId());
-        } catch (UserServiceClientNotFoundException e) {
+        } catch (
+                UserServiceClientException e) {
             pe.setPaymentStatus(PaymentEntity.PaymentStatus.FAILED);
             pe.setNote("Card token not found");
+            log.error("User client getCardToken failed status: {}", e.getStatusCode().value());
+            log.error("User client getCardToken failed body: {}", e.getMessage());
         }
 
         if (cardToken != null) {

@@ -13,8 +13,6 @@ spring:
   flyway:
     locations: classpath:db/migration
 
-server.port: 8080
-
 services:
   internal-secret: ${SERVICES_INTERNAL_SECRET}
   user-service:
@@ -25,3 +23,5 @@ jwt:
   expiry:
     accessToken: 900000
     refreshToken: 604800000
+
+server.port: ${SERVER_PORT}

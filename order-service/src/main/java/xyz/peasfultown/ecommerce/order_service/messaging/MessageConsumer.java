@@ -38,11 +38,12 @@ public class MessageConsumer {
         Order order = orderService.createOrder(message);
 
         messagePublisher.sendPaymentConfirmationMessage(
-            new PaymentConfirmationMessage(
-                message.getUserId(),
-                order.getId(),
-                message.getCardId(),
-                order.getTotalPrice()));
+                PaymentConfirmationMessage.builder()
+                        .userId(message.getUserId())
+                        .orderId(order.getId().toString())
+                        .cardId(message.getCardId())
+                        .amount(order.getTotalPrice())
+                .build());
     }
 
     @RabbitListener(

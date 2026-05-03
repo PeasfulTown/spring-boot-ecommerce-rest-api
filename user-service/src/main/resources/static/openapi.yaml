@@ -25,8 +25,11 @@ paths:
 
     post:
       tags: [ user ]
-      summary: Create user record
+      summary: Create user record (internal service use)
       operationId: createUser
+      parameters:
+        - $ref: '#/components/parameters/InternalServiceSecretHeader'
+        - $ref: '#/components/parameters/UserRoleHeader'
       requestBody:
         $ref: '#/components/requestBodies/UserCreateRequest'
       responses:
@@ -47,7 +50,7 @@ paths:
         '403':
           $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/{userId}:
+  /api/v1/users/me:
 
     get:
       tags: [ user ]
@@ -55,8 +58,6 @@ paths:
       operationId: getUser
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserRoleHeader'
-        - $ref: '#/components/parameters/UserIdPath'
       responses:
         '200':
           $ref: '#/components/responses/SingleUser'
@@ -71,8 +72,6 @@ paths:
       operationId: updateUser
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserRoleHeader'
-        - $ref: '#/components/parameters/UserIdPath'
       requestBody:
         $ref: '#/components/requestBodies/UserUpdateRequest'
       responses:
@@ -89,6 +88,51 @@ paths:
       operationId: deleteUser
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+
+  /api/v1/users/{userId}:
+
+    get:
+      tags: [ user ]
+      summary: Get user information (admin only)
+      operationId: adminGetUser
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleUser'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+
+    patch:
+      tags: [ user ]
+      summary: Update user record
+      operationId: adminUpdateUser
+      parameters:
+        - $ref: '#/components/parameters/UserRoleHeader'
+        - $ref: '#/components/parameters/UserIdPath'
+      requestBody:
+        $ref: '#/components/requestBodies/UserUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/SingleUser'
+        '404':
+          $ref: '#/components/responses/ProblemDetail'
+        '403':
+          $ref: '#/components/responses/ProblemDetail'
+
+    delete:
+      tags: [ user ]
+      summary: Delete user record
+      operationId: adminDeleteUser
+      parameters:
         - $ref: '#/components/parameters/UserRoleHeader'
         - $ref: '#/components/parameters/UserIdPath'
       responses:
@@ -97,7 +141,7 @@ paths:
         '404':
           $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/{userId}/addresses:
+  /api/v1/users/me/addresses:
 
     post:
       tags: [ address ]
@@ -105,7 +149,6 @@ paths:
       operationId: createAddress
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserIdPath'
       requestBody:
         $ref: '#/components/requestBodies/AddressCreateRequest'
       responses:
@@ -122,8 +165,6 @@ paths:
       operationId: getUserAddresses
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserRoleHeader'
-        - $ref: '#/components/parameters/UserIdPath'
       responses:
         '200':
           $ref: '#/components/responses/BatchAddress'
@@ -140,7 +181,6 @@ paths:
       operationId: getAddress
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserRoleHeader'
         - $ref: '#/components/parameters/AddressIdPath'
       responses:
         '200':
@@ -156,7 +196,6 @@ paths:
       operationId: updateAddress
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserRoleHeader'
         - $ref: '#/components/parameters/AddressIdPath'
       requestBody:
         $ref: '#/components/requestBodies/AddressUpdateRequest'
@@ -174,7 +213,6 @@ paths:
       operationId: deleteAddress
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserRoleHeader'
         - $ref: '#/components/parameters/AddressIdPath'
       responses:
         '204':
@@ -200,14 +238,13 @@ paths:
         '404':
           $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/{userId}/cards:
+  /api/v1/users/me/cards:
     get:
       tags: [ card ]
       summary: Get user's saved payment cards
       operationId: getPaymentCards
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserIdPath'
       responses:
         '200':
           $ref: '#/components/responses/BatchCard'
@@ -222,7 +259,6 @@ paths:
       operationId: createPaymentCard
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserIdPath'
       requestBody:
         $ref: '#/components/requestBodies/CardCreateRequest'
       responses:
@@ -233,14 +269,13 @@ paths:
         '404':
           $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/{userId}/cards/{cardId}:
+  /api/v1/users/me/cards/{cardId}:
     get:
       tags: [ card ]
       summary: Get user's payment card by ID
       operationId: getPaymentCard
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserIdPath'
         - $ref: '#/components/parameters/CardIdPath'
       responses:
         '200':
@@ -255,8 +290,6 @@ paths:
       summary: Delete user's payment card by ID
       operationId: deletePaymentCard
       parameters:
-        - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserIdPath'
         - $ref: '#/components/parameters/CardIdPath'
       responses:
         '204':
@@ -266,14 +299,13 @@ paths:
         '404':
           $ref: '#/components/responses/ProblemDetail'
 
-  /api/v1/users/{userId}/cards/{cardId}/default:
+  /api/v1/users/me/cards/{cardId}/default:
     patch:
       tags: [ card ]
       summary: Set card as the default payment card
       operationId: setPaymentCardAsDefault
       parameters:
         - $ref: '#/components/parameters/UserIdHeader'
-        - $ref: '#/components/parameters/UserIdPath'
         - $ref: '#/components/parameters/CardIdPath'
       responses:
         '204':

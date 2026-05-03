@@ -310,7 +310,6 @@ public class IntegrationTest {
         assertEquals(c3.getId(), pe.getCategory().getId());
         assertEquals(req.getPrice(), pe.getPrice());
         assertEquals(req.getDescription(), pe.getDescription());
-        assertEquals(ProductEntity.StockStatus.LOW_STOCK, pe.calculateStockStatus());
         assertTrue(pe.getUpdatedAt().isAfter(pe.getCreatedAt()));
     }
 

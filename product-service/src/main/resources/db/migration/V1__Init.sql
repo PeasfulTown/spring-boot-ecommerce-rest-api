@@ -13,7 +13,6 @@ create table if not exists product (
     price decimal(10, 2) not null,
     active_status enum('ACTIVE','INACTIVE') default 'INACTIVE',
     stock int unsigned not null default 0,
-    stock_status enum('LOW_STOCK', 'OUT_OF_STOCK', 'IN_STOCK'),
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null default current_timestamp,
     primary key (id),

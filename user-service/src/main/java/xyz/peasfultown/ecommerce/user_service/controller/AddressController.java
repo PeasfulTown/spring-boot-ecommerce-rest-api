@@ -24,49 +24,31 @@ public class AddressController implements AddressApi {
     }
 
     @Override
-    public ResponseEntity<Address> createAddress(String userIdHeader, String userIdPath, AddressCreateRequest createReq) throws Exception {
-        if (!userIdHeader.equals(userIdPath))
-            throw new AccessForbiddenException();
+    public ResponseEntity<Address> createAddress(String userIdHeader, AddressCreateRequest createReq) throws Exception {
         return status(HttpStatus.CREATED).body(service.createAddress(userIdHeader, createReq));
     }
 
     @Override
-    public ResponseEntity<List<Address>> getUserAddresses(String userIdHeader, String userIdPath, String userRole) throws Exception {
-        List<Address> addresses;
-        if (userRole.equals("ADMIN")
-                || userIdHeader.equals(userIdPath))
-            addresses = service.getAddressesByUserId(userIdPath);
-        else
-            throw new AccessForbiddenException();
+    public ResponseEntity<List<Address>> getUserAddresses(String userIdHeader) throws Exception {
+        List<Address> addresses = service.getAddressesByUserId(userIdHeader);
         return ok(addresses);
     }
 
     @Override
-    public ResponseEntity<Address> getAddress(String userIdHeader, String userRoleHeader, String addressIdPath) throws Exception {
-        Address address;
-        if (userRoleHeader.equals("ADMIN"))
-            address = service.getAddress(addressIdPath);
-        else
-            address = service.getAddress(userIdHeader, addressIdPath);
+    public ResponseEntity<Address> getAddress(String userIdHeader, String addressIdPath) throws Exception {
+        Address address = service.getAddress(addressIdPath);
         return ok(address);
     }
 
     @Override
-    public ResponseEntity<Address> updateAddress(String userIdHeader, String userRoleHeader, String addressIdPath, AddressUpdateRequest updateReq) throws Exception {
-        Address address;
-        if (userRoleHeader.equals("ADMIN"))
-            address = service.updateAddress(addressIdPath, updateReq);
-        else
-            address = service.updateAddress(userIdHeader, addressIdPath, updateReq);
+    public ResponseEntity<Address> updateAddress(String userIdHeader, String addressIdPath, AddressUpdateRequest updateReq) throws Exception {
+        Address address = service.updateAddress(addressIdPath, updateReq);
         return ok(address);
     }
 
     @Override
-    public ResponseEntity<Void> deleteAddress(String userIdHeader, String userRoleHeader, String addressIdPath) throws Exception {
-        if (userRoleHeader.equals("ADMIN"))
-            service.deleteAddress(addressIdPath);
-        else
-            service.deleteAddress(userIdHeader, addressIdPath);
+    public ResponseEntity<Void> deleteAddress(String userIdHeader, String addressIdPath) throws Exception {
+        service.deleteAddress(addressIdPath);
         return status(HttpStatus.NO_CONTENT).build();
     }
 

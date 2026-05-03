@@ -1,18 +1,23 @@
 spring:
+
   profiles.active: ${ACTIVE_PROFILE}
+
   application:
     name: UserService
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+
   jpa:
     hibernate:
       ddl-auto: validate
+
   flyway:
     locations: classpath:db/migration
 
 services:
   internal-secret: ${SERVICES_INTERNAL_SECRET}
 
-server.port: 8082
+server.port: ${SERVER_PORT}

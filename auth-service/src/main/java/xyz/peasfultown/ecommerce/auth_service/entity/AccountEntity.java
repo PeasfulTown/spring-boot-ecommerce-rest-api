@@ -29,10 +29,12 @@ public class AccountEntity {
     @Column(name = "password", length = 50, nullable = false)
     private String password;
 
+    @Builder.Default
     @Column(name = "role", nullable = false)
     @Enumerated(EnumType.STRING)
     private RoleEnum role = RoleEnum.CUSTOMER;
 
+    @Builder.Default
     @OneToMany(
         mappedBy = "account",
         cascade = CascadeType.ALL

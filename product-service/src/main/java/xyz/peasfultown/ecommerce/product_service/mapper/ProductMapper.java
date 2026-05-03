@@ -1,6 +1,8 @@
 package xyz.peasfultown.ecommerce.product_service.mapper;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 import org.mapstruct.ValueMapping;
 import xyz.peasfultown.ecommerce.product_api.model.Product;
 import xyz.peasfultown.ecommerce.product_api.model.StockStatus;
@@ -16,6 +18,7 @@ import java.util.UUID;
 public interface ProductMapper {
     ProductEntity modelToEntity(Product model);
 
+    @Mapping(target = "stockStatus", source = "stock", qualifiedByName = "stockNumberToStockStatus")
     Product toModel(ProductEntity entity);
 
     List<Product> entityListToModelList(List<ProductEntity> pl);
@@ -42,10 +45,12 @@ public interface ProductMapper {
         return UUID.fromString(uuid);
     }
 
-    @ValueMapping(target = "OUT_OF_STOCK", source = "OUT_OF_STOCK")
-    @ValueMapping(target = "IN_STOCK", source = "IN_STOCK")
-    @ValueMapping(target = "LOW_STOCK", source = "LOW_STOCK")
-    StockStatus toModelStockStatus(ProductEntity.StockStatus stockStatus);
+    @Named("stockNumberToStockStatus")
+    default StockStatus stockNumberToStockStatus(Integer stock) {
+        if (stock == 0) return StockStatus.OUT_OF_STOCK;
+        else if (stock <= 20) return StockStatus.LOW_STOCK;
+        else return StockStatus.IN_STOCK;
+    }
 
 
 }

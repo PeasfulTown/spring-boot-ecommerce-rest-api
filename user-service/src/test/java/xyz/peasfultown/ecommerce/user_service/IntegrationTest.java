@@ -155,7 +155,9 @@ public class IntegrationTest {
         .build();
         mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(req)))
+                        .content(objMapper.writeValueAsString(req))
+                        .header("X-Internal-Service-Secret", internalSecret)
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isCreated())
                 ;
 
@@ -199,7 +201,7 @@ public class IntegrationTest {
 
     @Test
     void getUser_returns200_whenValidRequest() throws Exception {
-        mvc.perform(get("/api/v1/users/{userId}", ue1.getId().toString())
+        mvc.perform(get("/api/v1/users/me")
                 .header("X-User-Id", ue1.getId())
                 .header("X-User-Role", "CUSTOMER"))
                 .andExpect(status().isOk())
@@ -212,16 +214,15 @@ public class IntegrationTest {
     }
 
     @Test
-    void getUser_returns200_whenUserIdHeaderNotSameAsRequestUserId_AndIsAdmin() throws Exception {
+    void adminGetUser_returns200_whenIsAdmin() throws Exception {
         mvc.perform(get("/api/v1/users/{userId}", ue1.getId().toString())
-                        .header("X-User-Id", UUID.randomUUID().toString())
                         .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isOk())
         ;
     }
 
     @Test
-    void getUser_returns403_whenUserIdHeaderNotSameAsRequestedUserId_andNotAdmin() throws Exception {
+    void adminGetUser_returns403_whenNotAdmin() throws Exception {
         mvc.perform(get("/api/v1/users/{userId}", ue1.getId().toString())
                         .header("X-User-Id", ue2.getId())
                         .header("X-User-Role", "CUSTOMER"))
@@ -238,9 +239,9 @@ public class IntegrationTest {
                 .phone("123457899")
         .build();
 
-        mvc.perform(patch("/api/v1/users/{userId}", ue1.getId().toString())
+        mvc.perform(patch("/api/v1/users/me")
                 .header("X-User-Id", ue1.getId().toString())
-                        .header("X-User-Role", "CUSTOMER")
+                .header("X-User-Role", "CUSTOMER")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objMapper.writeValueAsString(req)))
                 .andExpect(status().isOk());
@@ -253,7 +254,7 @@ public class IntegrationTest {
     }
 
     @Test
-    void updateUser_returns200_whenIsAdmin() throws Exception {
+    void adminUpdateUser_returns200_whenIsAdmin() throws Exception {
         UserUpdateRequest req = UserUpdateRequest.builder()
                 .email("new@example.com")
                 .firstName("NewFirst")
@@ -276,23 +277,6 @@ public class IntegrationTest {
     }
 
     @Test
-    void updateUser_returns403_whenUserIdHeaderNotSameAsRequestedUserId_andNotAdmin() throws Exception {
-        UserUpdateRequest req = UserUpdateRequest.builder()
-                .email("new@example.com")
-                .firstName("NewFirst")
-                .lastName("NewLast")
-                .phone("123457899")
-                .build();
-
-        mvc.perform(patch("/api/v1/users/{userId}", ue1.getId().toString())
-                        .header("X-User-Id", UUID.randomUUID().toString())
-                        .header("X-User-Role", "CUSTOMER")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objMapper.writeValueAsString(req)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     void updateUser_returns404_whenUserNotFound() throws Exception {
         UUID randUserId = UUID.randomUUID();
         UserUpdateRequest req = UserUpdateRequest.builder()
@@ -302,7 +286,7 @@ public class IntegrationTest {
                 .phone("123457899")
                 .build();
 
-        mvc.perform(patch("/api/v1/users/{userId}", randUserId.toString())
+        mvc.perform(patch("/api/v1/users/me")
                         .header("X-User-Id", randUserId.toString())
                         .header("X-User-Role", "CUSTOMER")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -312,7 +296,7 @@ public class IntegrationTest {
 
     @Test
     void deleteUser_returns204_whenValidRequest() throws Exception {
-        mvc.perform(delete("/api/v1/users/{userId}", ue1.getId().toString())
+        mvc.perform(delete("/api/v1/users/me", ue1.getId().toString())
                 .header("X-User-Id", ue1.getId().toString())
                 .header("X-User-Role", "CUSTOMER"))
                 .andExpect(status().isNoContent())
@@ -323,7 +307,7 @@ public class IntegrationTest {
     }
 
     @Test
-    void deleteUser_returns204_whenUserIdHeaderNotSameAsRequestedUserId_andIsAdmin() throws Exception {
+    void adminDeleteUser_returns204_whenIsAdmin() throws Exception {
         mvc.perform(delete("/api/v1/users/{userId}", ue1.getId().toString())
                         .header("X-User-Id", UUID.randomUUID().toString())
                         .header("X-User-Role", "ADMIN"))
@@ -332,20 +316,11 @@ public class IntegrationTest {
     }
 
     @Test
-    void deleteUser_returns403_whenUserIdHeaderNotSameAsRequestedUserId_andNotAdmin() throws Exception {
-        mvc.perform(delete("/api/v1/users/{userId}", ue2.getId().toString())
-                        .header("X-User-Id", ue1.getId().toString())
-                        .header("X-User-Role", "CUSTOMER"))
-                .andExpect(status().isForbidden())
-        ;
-    }
-
-    @Test
-    void deleteUser_returns404_whenUserNotFound() throws Exception {
+    void adminDeleteUser_returns404_whenUserNotFound() throws Exception {
         UUID randUserId = UUID.randomUUID();
         mvc.perform(delete("/api/v1/users/{userId}", randUserId.toString())
                         .header("X-User-Id", randUserId.toString())
-                        .header("X-User-Role", "CUSTOMER"))
+                        .header("X-User-Role", "ADMIN"))
                 .andExpect(status().isNotFound())
         ;
     }
@@ -416,7 +391,7 @@ public class IntegrationTest {
                 .expiryMonth(3)
                 .expiryYear(2028)
                 .build();
-        mvc.perform(post("/api/v1/users/{userId}/cards", ue1.getId().toString())
+        mvc.perform(post("/api/v1/users/me/cards")
                 .header("X-User-Id", ue1.getId().toString())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objMapper.writeValueAsString(req)))
@@ -450,8 +425,7 @@ public class IntegrationTest {
                 .user(ue1)
         .build();
         ce = cardRepo.save(ce);
-        mvc.perform(get("/api/v1/users/{userId}/cards/{cardId}",
-                    ue1.getId().toString(),
+        mvc.perform(get("/api/v1/users/me/cards/{cardId}",
                     ce.getId().toString())
                 .header("X-User-Id", ue1.getId().toString()))
                 .andExpect(status().isOk())
@@ -462,25 +436,6 @@ public class IntegrationTest {
                 .andExpect(jsonPath("$.expiryMonth").value(ce.getExpiryMonth()))
                 .andExpect(jsonPath("$.expiryYear").value(ce.getExpiryYear()))
                 ;
-    }
-
-    @Test
-    void getCard_returns403_whenUserDoesntOwnCard() throws Exception {
-        CardEntity ce = CardEntity.builder()
-                .cardHolderName("John Smith")
-                .lastFourDigits("1234")
-                .cardType(CardEntity.CardType.VISA)
-                .expiryMonth(1)
-                .expiryYear(2028)
-                .token("tok_visa_1234_abcd1234")
-                .user(ue1)
-                .build();
-        ce = cardRepo.save(ce);
-        mvc.perform(get("/api/v1/users/{userId}/cards/{cardId}",
-                        ue1.getId().toString(),
-                        ce.getId().toString())
-                        .header("X-User-Id", ue2.getId().toString()))
-                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -507,8 +462,7 @@ public class IntegrationTest {
                 .build();
 
         cardRepo.saveAll(List.of(ce1, ce2));
-        mvc.perform(patch("/api/v1/users/{userId}/cards/{cardId}/default",
-                ue1.getId().toString(),
+        mvc.perform(patch("/api/v1/users/me/cards/{cardId}/default",
                 ce2.getId().toString())
                 .header("X-User-Id", ue1.getId().toString()))
                 .andExpect(status().isNoContent());
@@ -532,8 +486,7 @@ public class IntegrationTest {
                 .build();
 
         cardRepo.save(ce);
-        mvc.perform(delete("/api/v1/users/{userId}/cards/{cardId}",
-                        ue1.getId().toString(),
+        mvc.perform(delete("/api/v1/users/me/cards/{cardId}",
                         ce.getId().toString())
                 .header("X-User-Id", ue1.getId().toString()))
                 .andExpect(status().isNoContent());

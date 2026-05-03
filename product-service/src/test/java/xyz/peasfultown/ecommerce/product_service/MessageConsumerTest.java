@@ -125,14 +125,7 @@ public class MessageConsumerTest {
         for (Map.Entry<String, Integer> e : map.entrySet()) {
             ProductEntity pe = actual.get(UUID.fromString(e.getKey()));
             assertEquals(e.getValue(),
-            orig.get(UUID.fromString(e.getKey())).getStock()
-            - pe.getStock());
-            if (pe.getStock() == 0)
-                assertEquals(ProductEntity.StockStatus.OUT_OF_STOCK, pe.calculateStockStatus());
-            else if (pe.getStock() <= 20)
-                assertEquals(ProductEntity.StockStatus.LOW_STOCK, pe.calculateStockStatus());
-            else
-                assertEquals(ProductEntity.StockStatus.IN_STOCK, pe.calculateStockStatus());
+            orig.get(UUID.fromString(e.getKey())).getStock() - pe.getStock());
         }
     }
 }

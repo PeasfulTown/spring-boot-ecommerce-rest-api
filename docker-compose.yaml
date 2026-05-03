@@ -1,17 +1,318 @@
 services:
-  db:
+  auth_db:
     image: mysql:8.0.45-debian
-    container_name: ecommerce_mysql
+    container_name: auth_db
     restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_DATABASE=auth
       - MYSQL_USER=${DB_USERNAME}
       - MYSQL_PASSWORD=${DB_PASSWORD}
     ports:
       - "3306:3306"
-    volumes:
-      - db-data:/var/lib/mysql
+    # volumes:
+    #   - db-data:/var/lib/mysql
+    networks:
+      - ecommerce
+
+  user_db:
+    image: mysql:8.0.45-debian
+    container_name: user_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=user
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "3307:3306"
+    # volumes:
+    #   - db-data:/var/lib/mysql
+    networks:
+      - ecommerce
+
+  product_db:
+    image: mysql:8.0.45-debian
+    container_name: product_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=product
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "3308:3306"
+    # volumes:
+    #   - db-data:/var/lib/mysql
+    networks:
+      - ecommerce
+
+  cart_db:
+    image: mysql:8.0.45-debian
+    container_name: cart_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=cart
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "3309:3306"
+    # volumes:
+    #   - db-data:/var/lib/mysql
+    networks:
+      - ecommerce
+
+  order_db:
+    image: mysql:8.0.45-debian
+    container_name: order_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=order
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "3310:3306"
+    # volumes:
+    #   - db-data:/var/lib/mysql
+    networks:
+      - ecommerce
+
+  payment_db:
+    image: mysql:8.0.45-debian
+    container_name: payment_db
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=payment
+      - MYSQL_USER=${DB_USERNAME}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "3311:3306"
+    # volumes:
+    #   - db-data:/var/lib/mysql
+    networks:
+      - ecommerce
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    restart: always
+    hostname: myrabbit
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USERNAME}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_VHOST=${RABBITMQ_VHOST}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - ecommerce
+
+  auth:
+    container_name: "auth"
+    image: "peasfultown/auth:latest"
+    build:
+      context: .
+      dockerfile: docker/auth.dockerfile
+    depends_on:
+      - auth_db
+      - rabbitmq
+    environment:
+      - ACTIVE_PROFILE=${ACTIVE_PROFILE}
+      - DB_URL=jdbc:mysql://auth_db:3306/auth?createDatabaseIfNotExist=true
+      - DB_NAME=auth
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SERVICES_INTERNAL_SECRET=${SERVICES_INTERNAL_SECRET}
+      - USER_SERVICE_URL=http://user:8080
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_EXCHANGE=${RABBITMQ_DEFAULT_EXCHANGE}
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
+    ports:
+      - "8080:8080"
+    networks:
+      - ecommerce
+    restart: on-failure
+
+  user:
+    container_name: "user"
+    image: "peasfultown/user:latest"
+    build:
+      context: .
+      dockerfile: docker/user.dockerfile
+    depends_on:
+      - user_db
+      - rabbitmq
+    environment:
+      - ACTIVE_PROFILE=${ACTIVE_PROFILE}
+      - DB_URL=jdbc:mysql://user_db:3306/user?createDatabaseIfNotExist=true
+      - DB_NAME=user
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SERVICES_INTERNAL_SECRET=${SERVICES_INTERNAL_SECRET}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_EXCHANGE=${RABBITMQ_DEFAULT_EXCHANGE}
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
+    ports:
+      - "8081:8080"
+    networks:
+      - ecommerce
+    restart: on-failure
+
+  product:
+    container_name: "product"
+    image: "peasfultown/product:latest"
+    build:
+      context: .
+      dockerfile: docker/product.dockerfile
+    depends_on:
+      - product_db
+      - rabbitmq
+    environment:
+      - ACTIVE_PROFILE=${ACTIVE_PROFILE}
+      - DB_URL=jdbc:mysql://product_db:3306/product?createDatabaseIfNotExist=true
+      - DB_NAME=product
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SERVICES_INTERNAL_SECRET=${SERVICES_INTERNAL_SECRET}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_EXCHANGE=${RABBITMQ_DEFAULT_EXCHANGE}
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
+    ports:
+      - "8082:8080"
+    networks:
+      - ecommerce
+    restart: on-failure
+
+  cart:
+    container_name: "cart"
+    image: "peasfultown/cart:latest"
+    build:
+      context: .
+      dockerfile: docker/cart.dockerfile
+    depends_on:
+      - cart_db
+      - rabbitmq
+    environment:
+      - ACTIVE_PROFILE=${ACTIVE_PROFILE}
+      - DB_URL=jdbc:mysql://cart_db:3306/cart?createDatabaseIfNotExist=true
+      - DB_NAME=cart
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SERVICES_INTERNAL_SECRET=${SERVICES_INTERNAL_SECRET}
+      - PRODUCT_SERVICE_URL=http://product:8080
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_EXCHANGE=${RABBITMQ_DEFAULT_EXCHANGE}
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
+    ports:
+      - "8083:8080"
+    networks:
+      - ecommerce
+    restart: on-failure
+    
+  order:
+    container_name: "order"
+    image: "peasfultown/order:latest"
+    build:
+      context: .
+      dockerfile: docker/order.dockerfile
+    depends_on:
+      - order_db
+      - rabbitmq
+    environment:
+      - ACTIVE_PROFILE=${ACTIVE_PROFILE}
+      - DB_URL=jdbc:mysql://order_db:3306/order?createDatabaseIfNotExist=true
+      - DB_NAME=order
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SERVICES_INTERNAL_SECRET=${SERVICES_INTERNAL_SECRET}
+      - PRODUCT_SERVICE_URL=http://product:8080
+      - USER_SERVICE_URL=http://user:8080
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_EXCHANGE=${RABBITMQ_DEFAULT_EXCHANGE}
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
+    ports:
+      - "8084:8080"
+    networks:
+      - ecommerce
+    restart: on-failure
+
+  payment:
+    container_name: "payment"
+    image: "peasfultown/payment:latest"
+    build:
+      context: .
+      dockerfile: docker/payment.dockerfile
+    depends_on:
+      - payment_db
+      - rabbitmq
+    environment:
+      - ACTIVE_PROFILE=${ACTIVE_PROFILE}
+      - DB_URL=jdbc:mysql://payment_db:3306/payment?createDatabaseIfNotExist=true
+      - DB_NAME=payment
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=${RABBITMQ_USERNAME}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+      - RABBITMQ_DEFAULT_EXCHANGE=${RABBITMQ_DEFAULT_EXCHANGE}
+      - SERVICES_INTERNAL_SECRET=${SERVICES_INTERNAL_SECRET}
+      - USER_SERVICE_URL=http://user:8080
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
+    ports:
+      - "8085:8080"
+    networks:
+      - ecommerce
+    restart: on-failure
+
+  gateway:
+    container_name: "api-gateway"
+    image: "peasfultown/gateway:latest"
+    build:
+      context: .
+      dockerfile: docker/gateway.dockerfile
+    depends_on:
+      - auth
+      - user
+      - product
+      - cart
+      - order
+      - payment
+    ports:
+      - "8761:8080"
+    environment:
+      - ACTIVE_PROFILE=${ACTIVE_PROFILE}
+      - AUTH_SERVICE_URL=http://auth:8080
+      - USER_SERVICE_URL=http://user:8080
+      - PRODUCT_SERVICE_URL=http://product:8080
+      - CART_SERVICE_URL=http://cart:8080
+      - ORDER_SERVICE_URL=http://order:8080
+      - JWT_SECRET=${JWT_SECRET}
+      - SERVER_PORT=8080
     networks:
       - ecommerce
 
