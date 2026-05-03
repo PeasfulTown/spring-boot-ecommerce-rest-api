@@ -27,7 +27,10 @@ public class UserController implements UserApi {
     }
 
     @Override
-    public ResponseEntity<User> createUser(UserCreateRequest req) throws Exception {
+    public ResponseEntity<User> createUser(String internalSecret, String xUserRole, UserCreateRequest req) throws Exception {
+        if (!internalSecret.equals(this.internalSecret)
+            || !xUserRole.equals("ADMIN"))
+            throw new AccessForbiddenException();
         return status(HttpStatus.CREATED).body(service.createUser(req));
     }
 
@@ -55,35 +58,43 @@ public class UserController implements UserApi {
         return ok(res);
     }
 
+
     @Override
-    public ResponseEntity<User> getUser(String userIdHeader, String userRoleHeader, String userIdPath) throws Exception {
-        User user;
-        if (userRoleHeader.equals("ADMIN")
-        || userIdHeader.equals(userIdPath))
-            user = service.getUser(userIdPath);
-        else
+    public ResponseEntity<User> getUser(String userIdHeader) throws Exception {
+        return ok(service.getUser(userIdHeader));
+    }
+
+    @Override
+    public ResponseEntity<User> adminGetUser(String userRoleHeader, String userIdPath) throws Exception {
+        if (!userRoleHeader.equals("ADMIN"))
             throw new AccessForbiddenException();
 
-        return ok(user);
+        return ok(service.getUser(userIdPath));
     }
 
     @Override
-    public ResponseEntity<User> updateUser(String userIdHeader, String userRoleHeader, String userIdPath, UserUpdateRequest req) throws Exception {
-        User user;
-        if (userRoleHeader.equals("ADMIN")
-            || userIdHeader.equals(userIdPath))
-            user = service.updateUser(userIdPath, req);
-        else throw new AccessForbiddenException();
-        return ok(user);
+    public ResponseEntity<User> updateUser(String userIdHeader, UserUpdateRequest req) throws Exception {
+        return ok(service.updateUser(userIdHeader, req));
     }
 
     @Override
-    public ResponseEntity<Void> deleteUser(String userIdHeader, String userRoleHeader, String userIdPath) throws Exception {
-        if (userRoleHeader.equals("ADMIN")
-            || userIdHeader.equals(userIdPath))
-            service.deleteUser(userIdPath);
-        else throw new AccessForbiddenException();
+    public ResponseEntity<User> adminUpdateUser(String xUserRole, String userId, UserUpdateRequest userUpdateRequest) throws Exception {
+        if (!xUserRole.equals("ADMIN"))
+            throw new AccessForbiddenException();
+        return updateUser(userId, userUpdateRequest);
+    }
+
+    @Override
+    public ResponseEntity<Void> deleteUser(String userIdPath) throws Exception {
+        service.deleteUser(userIdPath);
         return status(HttpStatus.NO_CONTENT).build();
+    }
+
+    @Override
+    public ResponseEntity<Void> adminDeleteUser(String xUserRole, String userId) throws Exception {
+        if (!xUserRole.equals("ADMIN"))
+            throw new AccessForbiddenException();
+        return deleteUser(userId);
     }
 
     @Override

@@ -9,13 +9,13 @@ import java.util.List;
 public interface CardService {
     Card createPaymentCard(String userId, CardCreateRequest req);
 
-    Card getCard(String userId, String cardId);
+    Card getCard(String cardId);
 
-    List<Card> getCards(String userId);
+    List<Card> getUserCards(String userId);
 
     void setCardAsDefault(String userId, String cardId);
 
-    void deleteCard(String userId, String cardId);
+    void deleteCard(String cardId);
 
     CardToken getCardToken(String cardId);
 }

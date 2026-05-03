@@ -30,38 +30,29 @@ public class CardController implements CardApi {
     }
 
     @Override
-    public ResponseEntity<Card> createPaymentCard(String xUserId, String userId, CardCreateRequest cardCreateRequest) throws Exception {
-        if (!xUserId.equals(userId))
-            throw new AccessForbiddenException();
-
-        return status(HttpStatus.CREATED).body(service.createPaymentCard(userId, cardCreateRequest));
+    public ResponseEntity<Card> createPaymentCard(String userIdHeader, CardCreateRequest cardCreateRequest) throws Exception {
+        return status(HttpStatus.CREATED).body(service.createPaymentCard(userIdHeader, cardCreateRequest));
     }
 
     @Override
-    public ResponseEntity<Card> getPaymentCard(String xUserId, String userId, String cardId) throws Exception {
-        if (!xUserId.equals(userId))
-            throw new AccessForbiddenException();
-
-        return ok(service.getCard(userId, cardId));
+    public ResponseEntity<Card> getPaymentCard(String userIdHeader, String cardId) throws Exception {
+        return ok(service.getCard(cardId));
     }
 
     @Override
-    public ResponseEntity<List<Card>> getPaymentCards(String xUserId, String userId) throws Exception {
-        if (!xUserId.equals(userId))
-            throw new AccessForbiddenException();
-
-        return ok(service.getCards(userId));
+    public ResponseEntity<List<Card>> getPaymentCards(String userIdHeader) throws Exception {
+        return ok(service.getUserCards(userIdHeader));
     }
 
     @Override
-    public ResponseEntity<Void> setPaymentCardAsDefault(String xUserId, String userId, String cardId) throws Exception {
-        service.setCardAsDefault(userId, cardId);
+    public ResponseEntity<Void> setPaymentCardAsDefault(String xUserId, String cardId) throws Exception {
+        service.setCardAsDefault(xUserId, cardId);
         return status(HttpStatus.NO_CONTENT).build();
     }
 
     @Override
-    public ResponseEntity<Void> deletePaymentCard(String xUserId, String userId, String cardId) throws Exception {
-        service.deleteCard(userId, cardId);
+    public ResponseEntity<Void> deletePaymentCard(String cardId) throws Exception {
+        service.deleteCard(cardId);
         return status(HttpStatus.NO_CONTENT).build();
     }
 

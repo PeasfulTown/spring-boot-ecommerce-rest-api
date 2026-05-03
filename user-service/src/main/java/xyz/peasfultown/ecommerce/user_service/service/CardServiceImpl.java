@@ -68,8 +68,8 @@ public class CardServiceImpl implements CardService {
     }
 
     @Override
-    public Card getCard(String userId, String cardId) {
-        CardEntity ce = cardRepo.findCardByUserIdAndCardId(UUID.fromString(userId), UUID.fromString(cardId))
+    public Card getCard(String cardId) {
+        CardEntity ce = cardRepo.findById(UUID.fromString(cardId))
                 .orElseThrow(() -> new CardNotFoundException(String.format(
                         "Card not found by ID: %s", cardId
                 )));
@@ -78,7 +78,7 @@ public class CardServiceImpl implements CardService {
     }
 
     @Override
-    public List<Card> getCards(String userId) {
+    public List<Card> getUserCards(String userId) {
         List<CardEntity> ces = cardRepo.findCardsByUserId(UUID.fromString(userId));
 
         return cardMapper.toModel(ces);
@@ -98,8 +98,8 @@ public class CardServiceImpl implements CardService {
     }
 
     @Override
-    public void deleteCard(String userId, String cardId) {
-        CardEntity ce = cardRepo.findCardByUserIdAndCardId(UUID.fromString(userId), UUID.fromString(cardId))
+    public void deleteCard(String cardId) {
+        CardEntity ce = cardRepo.findById(UUID.fromString(cardId))
                 .orElseThrow(() -> new CardNotFoundException(String.format(
                         "Card not found by ID: %s", cardId
                 )));
