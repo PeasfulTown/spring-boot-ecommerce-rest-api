@@ -121,7 +121,7 @@ services:
       - rabbitmq
     environment:
       - ACTIVE_PROFILE=${ACTIVE_PROFILE}
-      - DB_URL=jdbc:mysql://auth_db:3306/auth?createDatabaseIfNotExist=true
+      - DB_URL=jdbc:mysql://auth_db:3306/auth
       - DB_NAME=auth
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -151,7 +151,7 @@ services:
       - rabbitmq
     environment:
       - ACTIVE_PROFILE=${ACTIVE_PROFILE}
-      - DB_URL=jdbc:mysql://user_db:3306/user?createDatabaseIfNotExist=true
+      - DB_URL=jdbc:mysql://user_db:3306/user
       - DB_NAME=user
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -180,7 +180,7 @@ services:
       - rabbitmq
     environment:
       - ACTIVE_PROFILE=${ACTIVE_PROFILE}
-      - DB_URL=jdbc:mysql://product_db:3306/product?createDatabaseIfNotExist=true
+      - DB_URL=jdbc:mysql://product_db:3306/product
       - DB_NAME=product
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -209,7 +209,7 @@ services:
       - rabbitmq
     environment:
       - ACTIVE_PROFILE=${ACTIVE_PROFILE}
-      - DB_URL=jdbc:mysql://cart_db:3306/cart?createDatabaseIfNotExist=true
+      - DB_URL=jdbc:mysql://cart_db:3306/cart
       - DB_NAME=cart
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -239,7 +239,7 @@ services:
       - rabbitmq
     environment:
       - ACTIVE_PROFILE=${ACTIVE_PROFILE}
-      - DB_URL=jdbc:mysql://order_db:3306/order?createDatabaseIfNotExist=true
+      - DB_URL=jdbc:mysql://order_db:3306/order
       - DB_NAME=order
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -270,7 +270,7 @@ services:
       - rabbitmq
     environment:
       - ACTIVE_PROFILE=${ACTIVE_PROFILE}
-      - DB_URL=jdbc:mysql://payment_db:3306/payment?createDatabaseIfNotExist=true
+      - DB_URL=jdbc:mysql://payment_db:3306/payment
       - DB_NAME=payment
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
